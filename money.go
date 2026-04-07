@@ -6,6 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+
+	"golang.org/x/text/currency"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 var (
@@ -146,8 +150,8 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 	return Money{amount: res, currency: m.currency}, nil
 }
 
-// Split divides the money into N parts, distributing remainders fairly.
-// This is critical for reconciliation.
+// Split divides the money into N parts, distributing remainders fairly. This is critical for reconciliation.
+// It distributes the remainder penny-by-penny across the participants.
 func (m Money) Split(n int) ([]Money, error) {
 	if n <= 0 {
 		return nil, errors.New("split count must be positive")
@@ -169,11 +173,7 @@ func (m Money) Split(n int) ([]Money, error) {
 	return results, nil
 }
 
-// Compare returns:
-// -1 if m < other
-//
-//	0 if m == other
-//	1 if m > other
+// Compare used for sorting ledgers or validating balances against credit limits. We want this to be readable and allocation-free.
 func (m Money) Compare(other Money) (int, error) {
 	if err := m.assertSameCurrency(other); err != nil {
 		return 0, err
@@ -187,9 +187,13 @@ func (m Money) Compare(other Money) (int, error) {
 	return 0, nil
 }
 
-// Helper methods for readability
-func (m Money) IsZero() bool     { return m.amount == 0 }
+// IsZero Helper methods for readability
+func (m Money) IsZero() bool { return m.amount == 0 }
+
+// IsPositive Helper methods for readability
 func (m Money) IsPositive() bool { return m.amount > 0 }
+
+// IsNegative Helper methods for readability
 func (m Money) IsNegative() bool { return m.amount < 0 }
 
 // FromDecimal converts a high-precision value (represented as a float or decimal)
@@ -233,6 +237,25 @@ func (m Money) String() string {
 
 	format := fmt.Sprintf("%%s%%.%df", m.currency.Decimals)
 	return fmt.Sprintf(format, m.currency.Symbol, floatVal)
+}
+
+// LocalisedString uses a locale/CLDR provider.
+// In a high-tier system, the Money package provides the data, but a LocaleProvider provides the context.
+// The Common Locale Data Repository (CLDR) is the industry-standard database maintained by Unicode. It contains the rules for every culture on earth regarding:
+// Decimal Separators: Is it 10.50 (US) or 10,50 (Germany)?
+// Grouping Separators: Is it 1,000 (UK) or 1.000 (Italy) or 1 000 (France)?
+// Symbol Placement: Does the symbol go before ($100) or after (100 €)?
+// Currency Spacing: Is there a space between the symbol and the number? (100 руб vs $100).
+func (m Money) LocalisedString(tag language.Tag) string {
+	// message.NewPrinter is the "Provider" that consults CLDR data
+	p := message.NewPrinter(tag)
+
+	// currency.ISO handles the formatting rules for the specific code
+	cur, _ := currency.ParseISO(m.currency.ISOCode)
+
+	// The printer automatically handles decimal points,
+	// grouping separators, and symbol placement based on the language tag.
+	return p.Sprint(currency.NarrowSymbol(cur.Amount(m.Float())))
 }
 
 func (m Money) assertSameCurrency(other Money) error {
