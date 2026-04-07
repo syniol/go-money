@@ -6,41 +6,88 @@ import (
 )
 
 func ExampleNew() {
-	moneyExample, err := money.New(88.1, "GBP")
+	moneyExample, err := money.New(8881, "GBP")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println(moneyExample.Value())
+	fmt.Println(moneyExample.Float())
+	fmt.Println(moneyExample.Minor())
 	fmt.Println(moneyExample.String())
-	fmt.Println(moneyExample.Formatted())
-
-	moneyArabicExample, err := money.New(88.1, "AED")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(moneyArabicExample.Formatted())
 
 	// Output:
-	// 88.1
-	// 88.10
-	// £88.10
-	// sss
+	// 88.81
+	// 8881
+	// £88.81
 }
 
 func ExampleMoney_IsEqual() {
-	moneyExample, err := money.New(88.1, "GBP")
+	moneyExample, err := money.New(8881, "GBP")
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	assertEqual, _ := moneyExample.IsEqual(88.10)
-	assertEqualGreater, _ := moneyExample.IsEqualGreater(88.11)
+	moneyNotEqual, err := money.New(8882, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	fmt.Println(assertEqual)
-	fmt.Println(assertEqualGreater)
+	fmt.Println(moneyExample.IsEqual(moneyExample))
+	fmt.Println(moneyExample.IsEqual(moneyNotEqual))
+
 	// Output:
-	// true
-	// false
+	// true <nil>
+	// false <nil>
+}
+
+func ExampleMoney_IsLess() {
+	moneyExample, err := money.New(8881, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	moneyGreater, err := money.New(8882, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	moneyLess, err := money.New(8880, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(moneyExample.IsLess(moneyExample))
+	fmt.Println(moneyExample.IsLess(moneyGreater))
+	fmt.Println(moneyExample.IsLess(moneyLess))
+
+	// Output:
+	// false <nil>
+	// true <nil>
+	// false <nil>
+}
+
+func ExampleMoney_IsGreat() {
+	moneyExample, err := money.New(8881, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	moneyGreater, err := money.New(8882, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	moneyLess, err := money.New(8880, "GBP")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(moneyExample.IsLess(moneyExample))
+	fmt.Println(moneyExample.IsGreat(moneyGreater))
+	fmt.Println(moneyExample.IsGreat(moneyLess))
+
+	// Output:
+	// false <nil>
+	// false <nil>
+	// true <nil>
 }

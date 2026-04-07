@@ -1,163 +1,243 @@
 package money
 
+//go:generate go run cmd/gen_currencies/main.go
+
 import (
-	"bytes"
-	_ "embed"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"reflect"
-	"strconv"
-	"strings"
+	"math"
 )
 
+var (
+	ErrInvalidCurrency  = errors.New("invalid or unsupported currency code")
+	ErrCurrencyMismatch = errors.New("currencies do not match")
+	ErrOverflow         = errors.New("arithmetic overflow")
+)
+
+// Money uses value semantics. This ensures that Money instances
+// are kept on the stack rather than the heap, avoiding GC pressure.
 type Money struct {
-	value  float64
-	config *Config
+	amount   int64
+	currency *Config
 }
 
 type Config struct {
-	Name         string `json:"name"`
-	Demonym      string `json:"demonym"`
-	MajorSingle  string `json:"majorSingle"`
-	MajorPlural  string `json:"majorPlural"`
-	ISONum       int    `json:"ISOnum"`
 	ISOCode      string
-	Symbol       string `json:"symbol"`
-	SymbolNative string `json:"symbolNative"`
-	MinorSingle  string `json:"minorSingle"`
-	MinorPlural  string `json:"minorPlural"`
-	ISODigits    int    `json:"ISOdigits"`
-	Decimals     int    `json:"decimals"`
-	NumToBasic   int    `json:"numToBasic"`
+	Name         string
+	Demonym      string
+	MajorSingle  string
+	MajorPlural  string
+	ISONum       int
+	Symbol       string
+	SymbolNative string
+	MinorSingle  string
+	MinorPlural  string
+	ISODigits    int
+	Decimals     int
+	NumToBasic   int
 }
 
-//go:embed iso-4217.json
-var currencyCodes []byte
+type RoundingMode int
 
-var currencyConfig map[string]*Config
+const (
+	RoundHalfToEven       RoundingMode = iota // Banker's Rounding
+	RoundHalfAwayFromZero                     // Common School Rounding
+	RoundDown                                 // Floor
+	RoundUp                                   // Ceiling
+)
 
-func init() {
-	err := json.NewDecoder(bytes.NewReader(currencyCodes)).Decode(&currencyConfig)
-	if err != nil {
-		panic(err)
-	}
-
-	for isoCurrencyCode, cfg := range currencyConfig {
-		cfg.ISOCode = isoCurrencyCode
-	}
-}
-
-func New(amount interface{}, currencyCode string) (*Money, error) {
-	if len(currencyCode) != 3 {
-		return nil, fmt.Errorf("invalid currency code: %s", currencyCode)
-	}
-
-	cfg, exists := currencyConfig[strings.ToUpper(currencyCode)]
+// New uses the pre-generated map (stored in currencies.gen.go)
+func New(minorAmount int64, currencyCode string) (Money, error) {
+	cfg, exists := currencyConfig[currencyCode]
 	if !exists {
-		return nil, fmt.Errorf("currencyCode %s not supported", currencyCode)
+		return Money{}, ErrInvalidCurrency
 	}
 
-	switch reflect.TypeOf(amount).Kind() {
-	case reflect.Float64:
-		money, err := parseFloat(amount.(float64), cfg)
-		if err != nil {
-			return nil, err
+	return Money{
+		amount:   minorAmount,
+		currency: cfg,
+	}, nil
+}
+
+// Minor returns the raw underlying minor unit (e.g., 10050 for $100.50).
+func (m Money) Minor() int64 {
+	return m.amount
+}
+
+// Float returns the float representation ONLY for display or boundary transit.
+// NEVER use this for internal math.
+func (m Money) Float() float64 {
+	if m.currency.Decimals == 0 {
+		return float64(m.amount)
+	}
+
+	divisor := 1.0
+	for i := 0; i < m.currency.Decimals; i++ {
+		divisor *= 10.0
+	}
+	return float64(m.amount) / divisor
+}
+
+// IsEqual safely compares two Money objects. Zero allocations.
+func (m Money) IsEqual(other Money) (bool, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return false, err
+	}
+	return m.amount == other.amount, nil
+}
+
+func (m Money) IsLess(other Money) (bool, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return false, err
+	}
+	return m.amount < other.amount, nil
+}
+
+func (m Money) IsGreat(other Money) (bool, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return false, err
+	}
+	return m.amount > other.amount, nil
+}
+
+// Add performs a thread-safe, overflow-checked addition.
+func (m Money) Add(other Money) (Money, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return Money{}, err
+	}
+
+	// Overflow check: if both are positive and result is smaller than either,
+	// or both are negative and result is larger than either.
+	res := m.amount + other.amount
+	if (other.amount > 0 && res < m.amount) || (other.amount < 0 && res > m.amount) {
+		return Money{}, ErrOverflow
+	}
+
+	return Money{amount: res, currency: m.currency}, nil
+}
+
+// Sub performs overflow-checked subtraction.
+func (m Money) Sub(other Money) (Money, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return Money{}, err
+	}
+
+	res := m.amount - other.amount
+	// Check for overflow: subtraction is essentially adding a negative.
+	if (other.amount > 0 && res > m.amount) || (other.amount < 0 && res < m.amount) {
+		return Money{}, ErrOverflow
+	}
+
+	return Money{amount: res, currency: m.currency}, nil
+}
+
+// Mul handles integer multiplication (e.g., "3 of these items").
+// For percentages (tax/interest), we'd use a different approach (Decimal).
+func (m Money) Mul(multiplier int64) (Money, error) {
+	if multiplier == 0 || m.amount == 0 {
+		return Money{amount: 0, currency: m.currency}, nil
+	}
+
+	res := m.amount * multiplier
+	if res/multiplier != m.amount {
+		return Money{}, ErrOverflow
+	}
+
+	return Money{amount: res, currency: m.currency}, nil
+}
+
+// Split divides the money into N parts, distributing remainders fairly.
+// This is critical for reconciliation.
+func (m Money) Split(n int) ([]Money, error) {
+	if n <= 0 {
+		return nil, errors.New("split count must be positive")
+	}
+
+	quotient := m.amount / int64(n)
+	remainder := m.amount % int64(n)
+
+	results := make([]Money, n)
+	for i := 0; i < n; i++ {
+		val := quotient
+		// Distribute the remainder penny-by-penny
+		if int64(i) < remainder {
+			val++
 		}
-		return money, nil
-
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		money, err := parseInt(amount.(int), cfg)
-		if err != nil {
-			return nil, err
-		}
-		return money, nil
-
-	default:
-		return nil, fmt.Errorf("unsupported amount type: %v", amount)
-	}
-}
-
-func (m *Money) Value() float64 {
-	return m.value
-}
-
-func (m *Money) String() string {
-	switch m.config.Decimals {
-	case 2:
-		return fmt.Sprintf("%.2f", m.value)
-	case 3:
-		return fmt.Sprintf("%.3f", m.value)
-	default:
-		return fmt.Sprintf("%f", m.value)
-	}
-}
-
-func (m *Money) IsEqual(amount interface{}) (bool, error) {
-	comparableMoney, err := New(amount, m.config.ISOCode)
-	if err != nil {
-		return false, err
+		results[i] = Money{amount: val, currency: m.currency}
 	}
 
-	return m.value == comparableMoney.value, nil
+	return results, nil
 }
 
-func (m *Money) IsEqualGreater(amount interface{}) (bool, error) {
-	comparableMoney, err := New(amount, m.config.ISOCode)
-	if err != nil {
-		return false, err
+// Compare returns:
+// -1 if m < other
+//
+//	0 if m == other
+//	1 if m > other
+func (m Money) Compare(other Money) (int, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return 0, err
 	}
-
-	return m.value <= comparableMoney.value, nil
-
+	if m.amount < other.amount {
+		return -1, nil
+	}
+	if m.amount > other.amount {
+		return 1, nil
+	}
+	return 0, nil
 }
 
-func (m *Money) IsLess(amount interface{}) (bool, error) {
-	comparableMoney, err := New(amount, m.config.ISOCode)
-	if err != nil {
-		return false, err
+// Helper methods for readability
+func (m Money) IsZero() bool     { return m.amount == 0 }
+func (m Money) IsPositive() bool { return m.amount > 0 }
+func (m Money) IsNegative() bool { return m.amount < 0 }
+
+// FromDecimal converts a high-precision value (represented as a float or decimal)
+// into a final Money value using a specific rounding strategy.
+// In finance, Banker's Rounding (Half-to-Even) is the gold standard because it reduces cumulative bias in large datasets.
+func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, error) {
+	cfg, exists := currencyConfig[currencyCode]
+	if !exists {
+		return Money{}, ErrInvalidCurrency
 	}
 
-	return m.value > comparableMoney.value, nil
+	// 1. Convert to the scale of the minor unit
+	// e.g., $10.506 USD -> 1050.6 cents
+	multiplier := math.Pow10(cfg.Decimals)
+	scaledValue := value * multiplier
+
+	var rounded int64
+	switch mode {
+	case RoundHalfToEven:
+		rounded = int64(math.RoundToEven(scaledValue))
+	case RoundHalfAwayFromZero:
+		rounded = int64(math.Round(scaledValue))
+	case RoundDown:
+		rounded = int64(math.Floor(scaledValue))
+	case RoundUp:
+		rounded = int64(math.Ceil(scaledValue))
+	}
+
+	return Money{amount: rounded, currency: cfg}, nil
 }
 
-func (m *Money) IsEqualLess(amount interface{}) (bool, error) {
-	comparableMoney, err := New(amount, m.config.ISOCode)
-	if err != nil {
-		return false, err
+// String returns a localized string representation.
+// todo: pass a locale/CLDR provider here.
+func (m Money) String() string {
+	if m.currency.Decimals == 0 {
+		return fmt.Sprintf("%s%d", m.currency.Symbol, m.amount)
 	}
 
-	return m.value >= comparableMoney.value, nil
+	divisor := math.Pow10(m.currency.Decimals)
+	floatVal := float64(m.amount) / divisor
+
+	format := fmt.Sprintf("%%s%%.%df", m.currency.Decimals)
+	return fmt.Sprintf(format, m.currency.Symbol, floatVal)
 }
 
-func (m *Money) Formatted() string {
-	switch m.config.Decimals {
-	case 1:
-		return fmt.Sprintf("%s%.1f", m.config.Symbol, m.value)
-	case 2:
-		return fmt.Sprintf("%s%.2f", m.config.Symbol, m.value)
-	case 3:
-		return fmt.Sprintf("%s%.3f", m.config.Symbol, m.value)
-	default:
-		return fmt.Sprintf("%s%f", m.config.Symbol, m.value)
+func (m Money) assertSameCurrency(other Money) error {
+	if m.currency == nil || other.currency == nil || m.currency.ISOCode != other.currency.ISOCode {
+		return ErrCurrencyMismatch
 	}
-}
-
-func parseInt(amount int, cfg *Config) (*Money, error) {
-	amountWithDecimal := fmt.Sprintf("%d.00", amount)
-	value, err := strconv.ParseFloat(amountWithDecimal, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Money{value: value, config: cfg}, nil
-}
-
-func parseFloat(amount float64, cfg *Config) (*Money, error) {
-	amountWithDecimal := fmt.Sprintf("%.2f", amount)
-	value, err := strconv.ParseFloat(amountWithDecimal, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Money{value: value, config: cfg}, nil
+	return nil
 }
