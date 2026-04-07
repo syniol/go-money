@@ -56,9 +56,9 @@ func ExampleMoney_IsLess() {
 		fmt.Println(err)
 	}
 
-	fmt.Println(moneyExample.IsLess(moneyExample))
-	fmt.Println(moneyExample.IsLess(moneyGreater))
-	fmt.Println(moneyExample.IsLess(moneyLess))
+	fmt.Println(moneyExample.IsLessThan(moneyExample))
+	fmt.Println(moneyExample.IsLessThan(moneyGreater))
+	fmt.Println(moneyExample.IsLessThan(moneyLess))
 
 	// Output:
 	// false <nil>
@@ -82,9 +82,9 @@ func ExampleMoney_IsGreat() {
 		fmt.Println(err)
 	}
 
-	fmt.Println(moneyExample.IsLess(moneyExample))
-	fmt.Println(moneyExample.IsGreat(moneyGreater))
-	fmt.Println(moneyExample.IsGreat(moneyLess))
+	fmt.Println(moneyExample.IsLessThan(moneyExample))
+	fmt.Println(moneyExample.IsGreaterThan(moneyGreater))
+	fmt.Println(moneyExample.IsGreaterThan(moneyLess))
 
 	// Output:
 	// false <nil>

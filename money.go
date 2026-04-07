@@ -218,14 +218,14 @@ func (m Money) IsEqual(other Money) (bool, error) {
 	return m.amount == other.amount, nil
 }
 
-func (m Money) IsLess(other Money) (bool, error) {
+func (m Money) IsLessThan(other Money) (bool, error) {
 	if err := m.assertSameCurrency(other); err != nil {
 		return false, err
 	}
 	return m.amount < other.amount, nil
 }
 
-func (m Money) IsGreat(other Money) (bool, error) {
+func (m Money) IsGreaterThan(other Money) (bool, error) {
 	if err := m.assertSameCurrency(other); err != nil {
 		return false, err
 	}
