@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	ErrUnsafeScale      = errors.New("currency decimals exceed the safe limit for int64 container")
 	ErrInvalidCurrency  = errors.New("invalid or unsupported currency code")
 	ErrInvalidFormat    = errors.New("invalid money format")
 	ErrTooMuchDetail    = errors.New("string scale exceeds currency decimals")
@@ -53,6 +54,8 @@ const (
 	RoundUp                                   // Ceiling
 )
 
+const MaxSafeDecimals = 12
+
 // New creates a Money instance using int64 minor units.
 // Example: "10.50" USD -> 1050
 // It uses the pre-generated map (stored in currencies.gen.go)
@@ -62,10 +65,25 @@ func New(minorAmount int64, currencyCode string) (Money, error) {
 		return Money{}, ErrInvalidCurrency
 	}
 
+	// The "Safe Scale" check
+	if err := validateScale(cfg); err != nil {
+		return Money{}, err
+	}
+
 	return Money{
 		amount:   minorAmount,
 		currency: cfg,
 	}, nil
+}
+
+// MustNew is for hardcoded values or global vars. It panics on error.
+// Use this sparingly in production code; primarily for tests or constants.
+func MustNew(minorAmount int64, currencyCode string) Money {
+	m, err := New(minorAmount, currencyCode)
+	if err != nil {
+		panic(err)
+	}
+	return m
 }
 
 // NewFromString creates a Money instance using int64 minor units.
@@ -337,6 +355,15 @@ func (m Money) LocalisedString(tag language.Tag) string {
 	return p.Sprint(currency.NarrowSymbol(cur.Amount(m.Float())))
 }
 
+// validateScale ensures the currency is actually safe to use with int64 math.
+func validateScale(cfg *Config) error {
+	if cfg.Decimals > MaxSafeDecimals {
+		return ErrUnsafeScale
+	}
+	return nil
+}
+
+// assertSameCurrency ensures same currency used for comparison helper methods
 func (m Money) assertSameCurrency(other Money) error {
 	if m.currency == nil || other.currency == nil || m.currency.ISOCode != other.currency.ISOCode {
 		return ErrCurrencyMismatch
