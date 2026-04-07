@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"golang.org/x/text/currency"
 	"golang.org/x/text/language"
@@ -14,6 +15,8 @@ import (
 
 var (
 	ErrInvalidCurrency  = errors.New("invalid or unsupported currency code")
+	ErrInvalidFormat    = errors.New("invalid money format")
+	ErrTooMuchDetail    = errors.New("string scale exceeds currency decimals")
 	ErrCurrencyMismatch = errors.New("currencies do not match")
 	ErrOverflow         = errors.New("arithmetic overflow")
 )
@@ -50,7 +53,9 @@ const (
 	RoundUp                                   // Ceiling
 )
 
-// New uses the pre-generated map (stored in currencies.gen.go)
+// New creates a Money instance using int64 minor units.
+// Example: "10.50" USD -> 1050
+// It uses the pre-generated map (stored in currencies.gen.go)
 func New(minorAmount int64, currencyCode string) (Money, error) {
 	cfg, exists := currencyConfig[currencyCode]
 	if !exists {
@@ -59,6 +64,80 @@ func New(minorAmount int64, currencyCode string) (Money, error) {
 
 	return Money{
 		amount:   minorAmount,
+		currency: cfg,
+	}, nil
+}
+
+// NewFromString creates a Money instance using int64 minor units.
+// Example: "10.50" USD -> 1050
+func NewFromString(value string, currencyCode string) (Money, error) {
+	cfg, exists := currencyConfig[currencyCode]
+	if !exists {
+		return Money{}, ErrInvalidCurrency
+	}
+
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return Money{}, ErrInvalidFormat
+	}
+
+	// 1. Check for negativity
+	negative := false
+	if value[0] == '-' {
+		negative = true
+		value = value[1:]
+	}
+
+	// 2. Split into whole and fractional parts
+	parts := strings.Split(value, ".")
+	if len(parts) > 2 {
+		return Money{}, ErrInvalidFormat
+	}
+
+	wholeStr := parts[0]
+	fracStr := ""
+	if len(parts) == 2 {
+		fracStr = parts[1]
+	}
+
+	// 3. Strict decimal enforcement
+	if len(fracStr) > cfg.Decimals {
+		return Money{}, ErrTooMuchDetail
+	}
+
+	// 4. Pad the fraction (e.g., "5" becomes "50" for USD)
+	for len(fracStr) < cfg.Decimals {
+		fracStr += "0"
+	}
+
+	// 5. Build the combined string (e.g., "10" + "50" = "1050")
+	combinedStr := wholeStr + fracStr
+	if combinedStr == "" {
+		combinedStr = "0"
+	}
+
+	// 6. Manual string-to-int64 conversion with overflow check
+	// We avoid strconv.ParseInt because we need to be extremely careful with overflow
+	var res int64
+	for i := 0; i < len(combinedStr); i++ {
+		digit := int64(combinedStr[i] - '0')
+		if digit < 0 || digit > 9 {
+			return Money{}, ErrInvalidFormat
+		}
+
+		// Overflow check: res * 10 + digit
+		if res > (math.MaxInt64-digit)/10 {
+			return Money{}, ErrOverflow
+		}
+		res = res*10 + digit
+	}
+
+	if negative {
+		res = -res
+	}
+
+	return Money{
+		amount:   res,
 		currency: cfg,
 	}, nil
 }
