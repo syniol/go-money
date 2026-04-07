@@ -3,6 +3,7 @@ package money
 //go:generate go run cmd/gen_currencies/main.go
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -160,139 +161,6 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 	}, nil
 }
 
-// Minor returns the raw underlying minor unit (e.g., 10050 for $100.50).
-func (m Money) Minor() int64 {
-	return m.amount
-}
-
-// Float returns the float representation ONLY for display or boundary transit.
-// NEVER use this for internal math.
-func (m Money) Float() float64 {
-	if m.currency.Decimals == 0 {
-		return float64(m.amount)
-	}
-
-	divisor := 1.0
-	for i := 0; i < m.currency.Decimals; i++ {
-		divisor *= 10.0
-	}
-	return float64(m.amount) / divisor
-}
-
-// IsEqual safely compares two Money objects. Zero allocations.
-func (m Money) IsEqual(other Money) (bool, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return false, err
-	}
-	return m.amount == other.amount, nil
-}
-
-func (m Money) IsLess(other Money) (bool, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return false, err
-	}
-	return m.amount < other.amount, nil
-}
-
-func (m Money) IsGreat(other Money) (bool, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return false, err
-	}
-	return m.amount > other.amount, nil
-}
-
-// Add performs a thread-safe, overflow-checked addition.
-func (m Money) Add(other Money) (Money, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return Money{}, err
-	}
-
-	// Overflow check: if both are positive and result is smaller than either,
-	// or both are negative and result is larger than either.
-	res := m.amount + other.amount
-	if (other.amount > 0 && res < m.amount) || (other.amount < 0 && res > m.amount) {
-		return Money{}, ErrOverflow
-	}
-
-	return Money{amount: res, currency: m.currency}, nil
-}
-
-// Sub performs overflow-checked subtraction.
-func (m Money) Sub(other Money) (Money, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return Money{}, err
-	}
-
-	res := m.amount - other.amount
-	// Check for overflow: subtraction is essentially adding a negative.
-	if (other.amount > 0 && res > m.amount) || (other.amount < 0 && res < m.amount) {
-		return Money{}, ErrOverflow
-	}
-
-	return Money{amount: res, currency: m.currency}, nil
-}
-
-// Mul handles integer multiplication (e.g., "3 of these items").
-// For percentages (tax/interest), we'd use a different approach (Decimal).
-func (m Money) Mul(multiplier int64) (Money, error) {
-	if multiplier == 0 || m.amount == 0 {
-		return Money{amount: 0, currency: m.currency}, nil
-	}
-
-	res := m.amount * multiplier
-	if res/multiplier != m.amount {
-		return Money{}, ErrOverflow
-	}
-
-	return Money{amount: res, currency: m.currency}, nil
-}
-
-// Split divides the money into N parts, distributing remainders fairly. This is critical for reconciliation.
-// It distributes the remainder penny-by-penny across the participants.
-func (m Money) Split(n int) ([]Money, error) {
-	if n <= 0 {
-		return nil, errors.New("split count must be positive")
-	}
-
-	quotient := m.amount / int64(n)
-	remainder := m.amount % int64(n)
-
-	results := make([]Money, n)
-	for i := 0; i < n; i++ {
-		val := quotient
-		// Distribute the remainder penny-by-penny
-		if int64(i) < remainder {
-			val++
-		}
-		results[i] = Money{amount: val, currency: m.currency}
-	}
-
-	return results, nil
-}
-
-// Compare used for sorting ledgers or validating balances against credit limits. We want this to be readable and allocation-free.
-func (m Money) Compare(other Money) (int, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return 0, err
-	}
-	if m.amount < other.amount {
-		return -1, nil
-	}
-	if m.amount > other.amount {
-		return 1, nil
-	}
-	return 0, nil
-}
-
-// IsZero Helper methods for readability
-func (m Money) IsZero() bool { return m.amount == 0 }
-
-// IsPositive Helper methods for readability
-func (m Money) IsPositive() bool { return m.amount > 0 }
-
-// IsNegative Helper methods for readability
-func (m Money) IsNegative() bool { return m.amount < 0 }
-
 // FromDecimal converts a high-precision value (represented as a float or decimal)
 // into a final Money value using a specific rounding strategy.
 // In finance, Banker's Rounding (Half-to-Even) is the gold standard because it reduces cumulative bias in large datasets.
@@ -322,9 +190,142 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	return Money{amount: rounded, currency: cfg}, nil
 }
 
+// Minor returns the raw underlying minor unit (e.g., 10050 for $100.50).
+func (m *Money) Minor() int64 {
+	return m.amount
+}
+
+// Float returns the float representation ONLY for display or boundary transit.
+// NEVER use this for internal math.
+func (m *Money) Float() float64 {
+	if m.currency.Decimals == 0 {
+		return float64(m.amount)
+	}
+
+	divisor := 1.0
+	for i := 0; i < m.currency.Decimals; i++ {
+		divisor *= 10.0
+	}
+	return float64(m.amount) / divisor
+}
+
+// IsEqual safely compares two Money objects. Zero allocations.
+func (m *Money) IsEqual(other Money) (bool, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return false, err
+	}
+	return m.amount == other.amount, nil
+}
+
+func (m *Money) IsLess(other Money) (bool, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return false, err
+	}
+	return m.amount < other.amount, nil
+}
+
+func (m *Money) IsGreat(other Money) (bool, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return false, err
+	}
+	return m.amount > other.amount, nil
+}
+
+// Add performs a thread-safe, overflow-checked addition.
+func (m *Money) Add(other Money) (Money, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return Money{}, err
+	}
+
+	// Overflow check: if both are positive and result is smaller than either,
+	// or both are negative and result is larger than either.
+	res := m.amount + other.amount
+	if (other.amount > 0 && res < m.amount) || (other.amount < 0 && res > m.amount) {
+		return Money{}, ErrOverflow
+	}
+
+	return Money{amount: res, currency: m.currency}, nil
+}
+
+// Sub performs overflow-checked subtraction.
+func (m *Money) Sub(other Money) (Money, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return Money{}, err
+	}
+
+	res := m.amount - other.amount
+	// Check for overflow: subtraction is essentially adding a negative.
+	if (other.amount > 0 && res > m.amount) || (other.amount < 0 && res < m.amount) {
+		return Money{}, ErrOverflow
+	}
+
+	return Money{amount: res, currency: m.currency}, nil
+}
+
+// Mul handles integer multiplication (e.g., "3 of these items").
+// For percentages (tax/interest), we'd use a different approach (Decimal).
+func (m *Money) Mul(multiplier int64) (Money, error) {
+	if multiplier == 0 || m.amount == 0 {
+		return Money{amount: 0, currency: m.currency}, nil
+	}
+
+	res := m.amount * multiplier
+	if res/multiplier != m.amount {
+		return Money{}, ErrOverflow
+	}
+
+	return Money{amount: res, currency: m.currency}, nil
+}
+
+// Split divides the money into N parts, distributing remainders fairly. This is critical for reconciliation.
+// It distributes the remainder penny-by-penny across the participants.
+func (m *Money) Split(n int) ([]Money, error) {
+	if n <= 0 {
+		return nil, errors.New("split count must be positive")
+	}
+
+	quotient := m.amount / int64(n)
+	remainder := m.amount % int64(n)
+
+	results := make([]Money, n)
+	for i := 0; i < n; i++ {
+		val := quotient
+		// Distribute the remainder penny-by-penny
+		if int64(i) < remainder {
+			val++
+		}
+		results[i] = Money{amount: val, currency: m.currency}
+	}
+
+	return results, nil
+}
+
+// Compare used for sorting ledgers or validating balances against credit limits.
+// We want this to be readable and allocation-free.
+func (m *Money) Compare(other Money) (int, error) {
+	if err := m.assertSameCurrency(other); err != nil {
+		return 0, err
+	}
+	if m.amount < other.amount {
+		return -1, nil
+	}
+	if m.amount > other.amount {
+		return 1, nil
+	}
+	return 0, nil
+}
+
+// IsZero Helper methods for readability
+func (m *Money) IsZero() bool { return m.amount == 0 }
+
+// IsPositive Helper methods for readability
+func (m *Money) IsPositive() bool { return m.amount > 0 }
+
+// IsNegative Helper methods for readability
+func (m *Money) IsNegative() bool { return m.amount < 0 }
+
 // String returns a localized string representation.
-// todo: pass a locale/CLDR provider here.
-func (m Money) String() string {
+func (m *Money) String() string {
 	if m.currency.Decimals == 0 {
 		return fmt.Sprintf("%s%d", m.currency.Symbol, m.amount)
 	}
@@ -343,7 +344,7 @@ func (m Money) String() string {
 // Grouping Separators: Is it 1,000 (UK) or 1.000 (Italy) or 1 000 (France)?
 // Symbol Placement: Does the symbol go before ($100) or after (100 €)?
 // Currency Spacing: Is there a space between the symbol and the number? (100 руб vs $100).
-func (m Money) LocalisedString(tag language.Tag) string {
+func (m *Money) LocalisedString(tag language.Tag) string {
 	// message.NewPrinter is the "Provider" that consults CLDR data
 	p := message.NewPrinter(tag)
 
@@ -355,6 +356,45 @@ func (m Money) LocalisedString(tag language.Tag) string {
 	return p.Sprint(currency.NarrowSymbol(cur.Amount(m.Float())))
 }
 
+// MarshalJSON implements the json.Marshaler interface.
+// It renders as {"amount":"10.50","currency":"USD"} to prevent
+// client-side floating-point precision loss.
+func (m *Money) MarshalJSON() ([]byte, error) {
+	if m.currency == nil {
+		return nil, errors.New("cannot marshal money without currency configuration")
+	}
+
+	divisor := math.Pow10(m.currency.Decimals)
+	// We use %.*f to ensure we always output the correct number of decimal places
+	amountStr := fmt.Sprintf("%.*f", m.currency.Decimals, float64(m.amount)/divisor)
+
+	// Manual byte construction is faster than json.Marshal(struct{...})
+	// for high-throughput services as it avoids reflection.
+	return []byte(fmt.Sprintf(`{"amount":"%s","currency":"%s"}`, amountStr, m.currency.ISOCode)), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// It expects the same {"amount":"10.50","currency":"USD"} format.
+func (m *Money) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Amount   string `json:"amount"`
+		Currency string `json:"currency"`
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Reuse our hardened string parser to ensure consistency
+	money, err := NewFromString(aux.Amount, aux.Currency)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal money: %w", err)
+	}
+
+	*m = money
+	return nil
+}
+
 // validateScale ensures the currency is actually safe to use with int64 math.
 func validateScale(cfg *Config) error {
 	if cfg.Decimals > MaxSafeDecimals {
@@ -364,7 +404,7 @@ func validateScale(cfg *Config) error {
 }
 
 // assertSameCurrency ensures same currency used for comparison helper methods
-func (m Money) assertSameCurrency(other Money) error {
+func (m *Money) assertSameCurrency(other Money) error {
 	if m.currency == nil || other.currency == nil || m.currency.ISOCode != other.currency.ISOCode {
 		return ErrCurrencyMismatch
 	}
