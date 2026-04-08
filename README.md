@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/syniol/go-money.svg)](https://pkg.go.dev/github.com/syniol/go-money)
 [![Go Report Card](https://goreportcard.com/badge/github.com/syniol/go-money)](https://goreportcard.com/report/github.com/syniol/go-money)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: BSD-3](https://img.shields.io/badge/License-BSD-blue.svg)](https://opensource.org/license/bsd-3-clause)
 
 `go-money` is a mission-critical Go library designed for financial institutions and high-integrity fintech applications. It treats money as a mathematical primitive—implementing strict value semantics, immutable operations, and stack-allocation to ensure maximum performance and zero precision loss.
 
