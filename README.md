@@ -107,6 +107,6 @@ go generate ./...
 ```
 
 ## ⚖ License
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the **BSD 3-Clause License**. See `LICENSE` for more information.
 ---
 Built for the next generation of Fintech. Developed by [Syniol Limited](https://syniol.com).
