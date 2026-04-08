@@ -1139,7 +1139,7 @@ var currencyConfig = map[string]*Config{
 		MinorSingle:  "Sen",
 		MinorPlural:  "Sen",
 		ISODigits:    0,
-		Decimals:     2,
+		Decimals:     0,
 		NumToBasic:   100,
 	},
 	"KES": {

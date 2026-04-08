@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"golang.org/x/text/currency"
 	"golang.org/x/text/language"
@@ -90,6 +92,8 @@ func MustNew(minorAmount int64, currencyCode string) Money {
 
 // NewFromString creates a Money instance using int64 minor units.
 // Example: "10.50" USD -> 1050
+// NewFromString creates a Money instance using int64 minor units.
+// Example: "10.50" USD -> 1050
 func NewFromString(value string, currencyCode string) (Money, error) {
 	cfg, exists := currencyConfig[currencyCode]
 	if !exists {
@@ -101,65 +105,61 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 		return Money{}, ErrInvalidFormat
 	}
 
-	// 1. Check for negativity
-	negative := false
-	if value[0] == '-' {
-		negative = true
-		value = value[1:]
-	}
-
-	// 2. Split into whole and fractional parts
 	parts := strings.Split(value, ".")
 	if len(parts) > 2 {
 		return Money{}, ErrInvalidFormat
 	}
 
-	wholeStr := parts[0]
-	fracStr := ""
+	var intPart, fracPart string
+	intPart = parts[0]
+
 	if len(parts) == 2 {
-		fracStr = parts[1]
+		fracPart = parts[1]
+		// Error if provided decimals exceed currency definition (e.g., "10.501" for USD)
+		if len(fracPart) > cfg.Decimals {
+			return Money{}, ErrTooMuchDetail
+		}
 	}
 
-	// 3. Strict decimal enforcement
-	if len(fracStr) > cfg.Decimals {
-		return Money{}, ErrTooMuchDetail
-	}
+	// Normalize parts to remove invalid characters (like commas or spaces)
+	intPart = strings.ReplaceAll(intPart, ",", "")
 
-	// 4. Pad the fraction (e.g., "5" becomes "50" for USD)
-	for len(fracStr) < cfg.Decimals {
-		fracStr += "0"
-	}
-
-	// 5. Build the combined string (e.g., "10" + "50" = "1050")
-	combinedStr := wholeStr + fracStr
-	if combinedStr == "" {
-		combinedStr = "0"
-	}
-
-	// 6. Manual string-to-int64 conversion with overflow check
-	// We avoid strconv.ParseInt because we need to be extremely careful with overflow
-	var res int64
-	for i := 0; i < len(combinedStr); i++ {
-		digit := int64(combinedStr[i] - '0')
-		if digit < 0 || digit > 9 {
+	// 1. Handle the integer part
+	var totalAmount int64
+	if intPart != "" && intPart != "-" {
+		parsedInt, err := strconv.ParseInt(intPart, 10, 64)
+		if err != nil {
 			return Money{}, ErrInvalidFormat
 		}
 
-		// Overflow check: res * 10 + digit
-		if res > (math.MaxInt64-digit)/10 {
-			return Money{}, ErrOverflow
+		// Scale the integer part by the currency's decimals (e.g., 10 USD -> 1000)
+		multiplier := int64(math.Pow10(cfg.Decimals))
+		totalAmount = parsedInt * multiplier
+	} else if intPart == "-" {
+		// Handle lone negative sign case
+		return Money{}, ErrInvalidFormat
+	}
+
+	// 2. Handle the fractional part
+	if fracPart != "" {
+		parsedFrac, err := strconv.ParseInt(fracPart, 10, 64)
+		if err != nil {
+			return Money{}, ErrInvalidFormat
 		}
-		res = res*10 + digit
+
+		// Scale the fraction to the correct minor unit power
+		// e.g., for USD (2 decimals), ".5" becomes 50, not 5.
+		fracMultiplier := int64(math.Pow10(cfg.Decimals - len(fracPart)))
+		fractionalAmount := parsedFrac * fracMultiplier
+
+		if strings.HasPrefix(intPart, "-") {
+			totalAmount -= fractionalAmount
+		} else {
+			totalAmount += fractionalAmount
+		}
 	}
 
-	if negative {
-		res = -res
-	}
-
-	return Money{
-		amount:   res,
-		currency: cfg,
-	}, nil
+	return New(totalAmount, currencyCode)
 }
 
 // FromDecimal converts a high-precision value (represented as a float or decimal)
@@ -346,15 +346,19 @@ func (m Money) String() string {
 // Symbol Placement: Does the symbol go before ($100) or after (100 €)?
 // Currency Spacing: Is there a space between the symbol and the number? (100 руб vs $100).
 func (m Money) LocalisedString(tag language.Tag) string {
-	// message.NewPrinter is the "Provider" that consults CLDR data
 	p := message.NewPrinter(tag)
-
-	// currency.ISO handles the formatting rules for the specific code
 	cur, _ := currency.ParseISO(m.currency.ISOCode)
 
-	// The printer automatically handles decimal points,
-	// grouping separators, and symbol placement based on the language tag.
-	return p.Sprint(currency.NarrowSymbol(cur.Amount(m.Float())))
+	raw := p.Sprint(currency.NarrowSymbol(cur.Amount(m.Float())))
+
+	// Robustly remove all Unicode whitespace (including \u00a0)
+	// while keeping the currency symbol and digits.
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, raw)
 }
 
 // MarshalJSON implements the json.Marshaler interface.
