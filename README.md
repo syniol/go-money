@@ -4,11 +4,14 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/syniol/go-money)](https://goreportcard.com/report/github.com/syniol/go-money)
 [![License: BSD-3](https://img.shields.io/badge/License-BSD-blue.svg)](https://opensource.org/license/bsd-3-clause)
 
-`go-money` is a mission-critical Go library designed for financial institutions and high-integrity fintech applications. It treats money as a mathematical primitive—implementing strict value semantics, immutable operations, and stack-allocation to ensure maximum performance and zero precision loss.
+`go-money` is a mission-critical Go library designed for financial institutions and high-integrity fintech applications. 
+It treats money as a mathematical primitive; implementing strict value semantics, immutable operations, and stack-allocation 
+to ensure maximum performance and zero precision loss.
 
 ## 💎 The Golden Rules of Financial Engineering
 
-Most libraries fail by treating money as a generic data structure or, worse, a floating-point number. `go-money` is built on three non-negotiable architectural pillars:
+Most libraries fail by treating money as a generic data structure or, worse, a floating-point number. 
+`go-money` is built on three non-negotiable architectural pillars:
 
 1.  **Zero Floating Point:** Absolute protection against IEEE-754 rounding errors. Money is stored as an `int64` representing the **minor unit** (e.g., $1.00 USD is `100`).
 2.  **Hardened Arithmetic:** Every addition, subtraction, and multiplication is guarded against silent integer overflows.
