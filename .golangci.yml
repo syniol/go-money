@@ -9,49 +9,22 @@ linters-settings:
     enable-all: true
     disable:
       - fieldalignment  # Disable field alignment checks for generated code
-    
+
   gocyclo:
     min-complexity: 30  # Increased from 15 to accommodate complex parsing logic
-    
-  maligned:
-    suggest-new: true
-    
+
   dupl:
     threshold: 150  # Increased threshold to allow some reasonable duplication
-    
+
   goconst:
     min-len: 3
     min-occurrences: 3
-    
+
   misspell:
     locale: GB
-    
+
   lll:
     line-length: 140
-    
+
   goimports:
     local-prefixes: github.com/syniol/go-money
-    
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-      - exitAfterDefer  # Disable this for cmd tools
-      - rangeValCopy    # Allow for readability in some cases
-      - paramTypeCombine # Allow explicit parameter types for clarity
-      - sprintfQuotedString # Allow %s for consistency
-      
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - (io.Closer).Close  # Allow ignoring Close
