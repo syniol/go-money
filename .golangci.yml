@@ -24,7 +24,7 @@ linters-settings:
     min-occurrences: 3
     
   misspell:
-    locale: US
+    locale: GB
     
   lll:
     line-length: 140
