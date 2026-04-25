@@ -2,10 +2,16 @@ run:
   timeout: 5m
   modules-download-mode: readonly
 
+output:
+  formats: colored-line-number
+
 linters-settings:
   govet:
+    check-shadowing: true
     disable-all: false
     enable-all: true
+    disable:
+      - fieldalignment  # Disable field alignment checks for generated code
 
   gocyclo:
     min-complexity: 30  # Increased from 15 to accommodate complex parsing logic
