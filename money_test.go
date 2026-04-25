@@ -45,7 +45,7 @@ func TestNewFromString(t *testing.T) {
 		{"zero decimals currency", "500", "JPY", 500, nil},
 		{"too many decimals", "10.501", "USD", 0, ErrTooMuchDetail},
 		{"lone negative sign", "-", "USD", 0, ErrInvalidFormat},
-		{"empty string", "", "USD", 0, ErrInvalidFormat},
+		{"empty string", "", "USD", 0, ErrEmptyInput},
 	}
 
 	for _, tt := range tests {
@@ -136,8 +136,8 @@ func TestArithmetic_And_Comparisons(t *testing.T) {
 func TestDisplayMethods(t *testing.T) {
 	m := MustNew(1050, "USD")
 
-	if m.Float() != 10.50 {
-		t.Errorf("Float() got %f, want 10.50", m.Float())
+	if m.AsDecimalString() != "10.50" {
+		t.Errorf("Float() got %s, want 10.50", m.AsDecimalString())
 	}
 
 	if m.String() != "$10.50" {
