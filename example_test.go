@@ -14,7 +14,7 @@ func ExampleNew() {
 		fmt.Println(err)
 	}
 
-	fmt.Println(moneyExample.Float())
+	fmt.Println(moneyExample.AsDecimalString())
 	fmt.Println(moneyExample.Minor())
 	fmt.Println(moneyExample.String())
 
