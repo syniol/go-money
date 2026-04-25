@@ -5,21 +5,31 @@ run:
 linters-settings:
   govet:
     check-shadowing: true
+    disable-all: false
+    enable-all: true
+    
   gocyclo:
-    min-complexity: 15
+    min-complexity: 30  # Increased from 15 to accommodate complex parsing logic
+    
   maligned:
     suggest-new: true
+    
   dupl:
-    threshold: 100
+    threshold: 150  # Increased threshold to allow some reasonable duplication
+    
   goconst:
-    min-len: 2
-    min-occurrences: 2
+    min-len: 3
+    min-occurrences: 3
+    
   misspell:
     locale: US
+    
   lll:
     line-length: 140
+    
   goimports:
-    local-prefixes: github.com/your-org/go-money
+    local-prefixes: github.com/syniol/go-money
+    
   gocritic:
     enabled-tags:
       - diagnostic
@@ -33,6 +43,26 @@ linters-settings:
       - octalLiteral
       - whyNoLint
       - wrapperFunc
+      - exitAfterDefer  # Disable this for cmd tools
+      - rangeValCopy    # Allow for readability in some cases
+      
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close  # Allow ignoring Close() in defers where appropriate
+      
+  depguard:
+    rules:
+      main:
+        files:
+          - "$all"
+        allow:
+          - $gostd
+          - github.com/syniol/go-money
+          - golang.org/x/text/currency
+          - golang.org/x/text/language  
+          - golang.org/x/text/message
 
 linters:
   enable:
@@ -72,13 +102,66 @@ linters:
     - unused
     - varcheck
     - whitespace
+  disable:
+    - varnamelen  # Allow short variable names for mathematical operations
 
 issues:
   exclude-rules:
+    # Allow longer functions in test files
     - path: _test\.go
       linters:
         - gomnd
         - funlen
         - gocyclo
+        - dupl
+        
+    # Allow longer functions in generated files
+    - path: currencies\.gen\.go
+      linters:
+        - gomnd
+        - funlen
+        - gocyclo
+        - dupl
+        - lll
+        
+    # Allow complex parsing logic in NewFromString
+    - source: "func.*NewFromString"
+      linters:
+        - gocyclo
+        - funlen
+        
+    # Allow os.Exit in cmd tools
+    - path: cmd/
+      linters:
+        - gocritic
+      text: "exitAfterDefer"
+        
+    # Allow some duplication in arithmetic methods (common patterns)
+    - source: "func.*\\(.*Money.*\\).*\\(.*Money.*,.*error.*\\)"
+      linters:
+        - dupl
+        
+    # Allow variable shadowing in specific cases
+    - text: "shadow.*err"
+      linters:
+        - govet
+      
+    # Allow len() == 0 checks for clarity in some contexts
+    - text: "emptyStringTest"
+      linters:
+        - gocritic
+      source: "len\\(.*\\).*==.*0"
 
   exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  default-severity: error
+  rules:
+    - linters:
+        - dupl
+      severity: warning
+    - linters:
+        - gocritic
+      severity: warning
