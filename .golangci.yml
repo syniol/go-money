@@ -7,7 +7,7 @@ output:
 
 linters-settings:
   govet:
-    check-shadowing: true
+    shadow: true
     disable-all: false
     enable-all: true
     disable:
