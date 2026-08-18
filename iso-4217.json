@@ -220,7 +220,7 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "BMD": {
@@ -261,6 +261,20 @@
     "symbolNative": "Bs.",
     "minorSingle": "Centavo",
     "minorPlural": "Centavos",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "BOV": {
+    "name": "Bolivian Mvdol",
+    "demonym": "Bolivian",
+    "majorSingle": "Mvdol",
+    "majorPlural": "Mvdols",
+    "ISOnum": 984,
+    "symbol": "BOV",
+    "symbolNative": "BOV",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
     "ISOdigits": 2,
     "decimals": 2,
     "numToBasic": 100
@@ -377,6 +391,20 @@
     "decimals": 2,
     "numToBasic": 100
   },
+  "CHE": {
+    "name": "WIR Euro",
+    "demonym": "WIR",
+    "majorSingle": "Euro",
+    "majorPlural": "Euros",
+    "ISOnum": 947,
+    "symbol": "CHE",
+    "symbolNative": "CHE",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
   "CHF": {
     "name": "Swiss Franc",
     "demonym": "Swiss",
@@ -387,6 +415,20 @@
     "symbolNative": "₣",
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "CHW": {
+    "name": "WIR Franc",
+    "demonym": "WIR",
+    "majorSingle": "Franc",
+    "majorPlural": "Francs",
+    "ISOnum": 948,
+    "symbol": "CHW",
+    "symbolNative": "CHW",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
     "ISOdigits": 2,
     "decimals": 2,
     "numToBasic": 100
@@ -404,6 +446,20 @@
     "ISOdigits": 2,
     "decimals": 2,
     "numToBasic": 100
+  },
+  "CLF": {
+    "name": "Unidad de Fomento",
+    "demonym": "Chilean",
+    "majorSingle": "Unidad de Fomento",
+    "majorPlural": "Unidades de Fomento",
+    "ISOnum": 990,
+    "symbol": "UF",
+    "symbolNative": "UF",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 4,
+    "decimals": 4,
+    "numToBasic": 10000
   },
   "CLP": {
     "name": "Chilean Peso",
@@ -441,6 +497,20 @@
     "ISOnum": 170,
     "symbol": "CO$",
     "symbolNative": "$",
+    "minorSingle": "Centavo",
+    "minorPlural": "Centavos",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "COU": {
+    "name": "Unidad de Valor Real",
+    "demonym": "Colombian",
+    "majorSingle": "Unidad de Valor Real",
+    "majorPlural": "Unidades de Valor Real",
+    "ISOnum": 970,
+    "symbol": "UVR",
+    "symbolNative": "UVR",
     "minorSingle": "Centavo",
     "minorPlural": "Centavos",
     "ISOdigits": 2,
@@ -528,7 +598,7 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "DKK": {
@@ -780,7 +850,7 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "GTQ": {
@@ -976,7 +1046,7 @@
     "minorSingle": "Aurar",
     "minorPlural": "Aurar",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "JEP": {
@@ -1102,7 +1172,7 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "KPW": {
@@ -1130,7 +1200,7 @@
     "minorSingle": "Jeon",
     "minorPlural": "Jeon",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "KWD": {
@@ -1298,7 +1368,7 @@
     "minorSingle": "Iraimbilanja",
     "minorPlural": "Iraimbilanja",
     "ISOdigits": 2,
-    "decimals": 0,
+    "decimals": 2,
     "numToBasic": 5
   },
   "MKD": {
@@ -1368,7 +1438,7 @@
     "minorSingle": "Khoums",
     "minorPlural": "Khoums",
     "ISOdigits": 2,
-    "decimals": 0,
+    "decimals": 2,
     "numToBasic": 5
   },
   "MUR": {
@@ -1421,6 +1491,20 @@
     "ISOnum": 484,
     "symbol": "MX$",
     "symbolNative": "$",
+    "minorSingle": "Centavo",
+    "minorPlural": "Centavos",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "MXV": {
+    "name": "Mexican Unidad de Inversion (UDI)",
+    "demonym": "Mexican",
+    "majorSingle": "Unidad de Inversion",
+    "majorPlural": "Unidades de Inversion",
+    "ISOnum": 979,
+    "symbol": "UDI",
+    "symbolNative": "UDI",
     "minorSingle": "Centavo",
     "minorPlural": "Centavos",
     "ISOdigits": 2,
@@ -1676,7 +1760,7 @@
     "minorSingle": "Centimo",
     "minorPlural": "Centimos",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "QAR": {
@@ -1746,7 +1830,7 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "SAR": {
@@ -1843,6 +1927,20 @@
     "symbolNative": "£",
     "minorSingle": "Penny",
     "minorPlural": "Pence",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "SLE": {
+    "name": "Sierra Leonean Leone",
+    "demonym": "Sierra Leonean",
+    "majorSingle": "Leone",
+    "majorPlural": "Leones",
+    "ISOnum": 925,
+    "symbol": "Le",
+    "symbolNative": "Le",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
     "ISOdigits": 2,
     "decimals": 2,
     "numToBasic": 100
@@ -2138,7 +2236,7 @@
     "minorSingle": "Cent",
     "minorPlural": "Cents",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
   },
   "USD": {
@@ -2155,6 +2253,34 @@
     "decimals": 2,
     "numToBasic": 100
   },
+  "USN": {
+    "name": "US Dollar (Next day)",
+    "demonym": "American",
+    "majorSingle": "Dollar",
+    "majorPlural": "Dollars",
+    "ISOnum": 997,
+    "symbol": "USN",
+    "symbolNative": "$",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "UYI": {
+    "name": "Uruguay Peso en Unidades Indexadas (UI)",
+    "demonym": "Uruguayan",
+    "majorSingle": "Peso",
+    "majorPlural": "Pesos",
+    "ISOnum": 940,
+    "symbol": "UI",
+    "symbolNative": "UI",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
   "UYU": {
     "name": "Uruguayan Peso",
     "demonym": "Uruguayan",
@@ -2168,6 +2294,20 @@
     "ISOdigits": 2,
     "decimals": 2,
     "numToBasic": 100
+  },
+  "UYW": {
+    "name": "Unidad Previsional",
+    "demonym": "Uruguayan",
+    "majorSingle": "Unidad Previsional",
+    "majorPlural": "Unidades Previsionales",
+    "ISOnum": 927,
+    "symbol": "UP",
+    "symbolNative": "UP",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 4,
+    "decimals": 4,
+    "numToBasic": 10000
   },
   "UZS": {
     "name": "Uzbekistani Som",
@@ -2188,7 +2328,7 @@
     "demonym": "Venezuelan",
     "majorSingle": "Bolívar Digital",
     "majorPlural": "Bolívars Digital",
-    "ISOnum": null,
+    "ISOnum": 926,
     "symbol": "Bs.",
     "symbolNative": "Bs.",
     "minorSingle": "Céntimo",
@@ -2222,7 +2362,7 @@
     "minorSingle": "Hào",
     "minorPlural": "Hào",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 10
   },
   "VUV": {
@@ -2253,6 +2393,20 @@
     "decimals": 2,
     "numToBasic": 100
   },
+  "XAD": {
+    "name": "Arab Accounting Dinar",
+    "demonym": "Arab Monetary Fund",
+    "majorSingle": "Dinar",
+    "majorPlural": "Dinars",
+    "ISOnum": 396,
+    "symbol": "AAD",
+    "symbolNative": "AAD",
+    "minorSingle": "Fils",
+    "minorPlural": "Fils",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
   "XAF": {
     "name": "Central African CFA Franc BEAC",
     "demonym": "Central African CFA",
@@ -2264,8 +2418,92 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
+  },
+  "XAG": {
+    "name": "Silver (one troy ounce)",
+    "demonym": "",
+    "majorSingle": "Troy Ounce",
+    "majorPlural": "Troy Ounces",
+    "ISOnum": 961,
+    "symbol": "XAG",
+    "symbolNative": "XAG",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XAU": {
+    "name": "Gold (one troy ounce)",
+    "demonym": "",
+    "majorSingle": "Troy Ounce",
+    "majorPlural": "Troy Ounces",
+    "ISOnum": 959,
+    "symbol": "XAU",
+    "symbolNative": "XAU",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XBA": {
+    "name": "Bond Markets Unit European Composite Unit (EURCO)",
+    "demonym": "",
+    "majorSingle": "EURCO",
+    "majorPlural": "EURCO",
+    "ISOnum": 955,
+    "symbol": "XBA",
+    "symbolNative": "XBA",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XBB": {
+    "name": "Bond Markets Unit European Monetary Unit (E.M.U.-6)",
+    "demonym": "",
+    "majorSingle": "EMU-6",
+    "majorPlural": "EMU-6",
+    "ISOnum": 956,
+    "symbol": "XBB",
+    "symbolNative": "XBB",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XBC": {
+    "name": "Bond Markets Unit European Unit of Account 9 (E.U.A.-9)",
+    "demonym": "",
+    "majorSingle": "EUA-9",
+    "majorPlural": "EUA-9",
+    "ISOnum": 957,
+    "symbol": "XBC",
+    "symbolNative": "XBC",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XBD": {
+    "name": "Bond Markets Unit European Unit of Account 17 (E.U.A.-17)",
+    "demonym": "",
+    "majorSingle": "EUA-17",
+    "majorPlural": "EUA-17",
+    "ISOnum": 958,
+    "symbol": "XBD",
+    "symbolNative": "XBD",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
   },
   "XCD": {
     "name": "East Caribbean Dollar",
@@ -2281,6 +2519,34 @@
     "decimals": 2,
     "numToBasic": 100
   },
+  "XCG": {
+    "name": "Caribbean Guilder",
+    "demonym": "Curaçao and Sint Maarten",
+    "majorSingle": "Guilder",
+    "majorPlural": "Guilders",
+    "ISOnum": 532,
+    "symbol": "Cg.",
+    "symbolNative": "Cg.",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
+  "XDR": {
+    "name": "Special Drawing Rights",
+    "demonym": "IMF",
+    "majorSingle": "SDR",
+    "majorPlural": "SDR",
+    "ISOnum": 960,
+    "symbol": "SDR",
+    "symbolNative": "SDR",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
   "XOF": {
     "name": "West African CFA Franc BCEAO",
     "demonym": "West African CFA",
@@ -2292,8 +2558,22 @@
     "minorSingle": "Centime",
     "minorPlural": "Centimes",
     "ISOdigits": 0,
-    "decimals": 2,
+    "decimals": 0,
     "numToBasic": 100
+  },
+  "XPD": {
+    "name": "Palladium (one troy ounce)",
+    "demonym": "",
+    "majorSingle": "Troy Ounce",
+    "majorPlural": "Troy Ounces",
+    "ISOnum": 964,
+    "symbol": "XPD",
+    "symbolNative": "XPD",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
   },
   "XPF": {
     "name": "CFP Franc (Franc Pacifique)",
@@ -2308,6 +2588,76 @@
     "ISOdigits": 0,
     "decimals": 0,
     "numToBasic": 100
+  },
+  "XPT": {
+    "name": "Platinum (one troy ounce)",
+    "demonym": "",
+    "majorSingle": "Troy Ounce",
+    "majorPlural": "Troy Ounces",
+    "ISOnum": 962,
+    "symbol": "XPT",
+    "symbolNative": "XPT",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XSU": {
+    "name": "Sucre",
+    "demonym": "ALBA",
+    "majorSingle": "Sucre",
+    "majorPlural": "Sucres",
+    "ISOnum": 994,
+    "symbol": "Sucre",
+    "symbolNative": "Sucre",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XTS": {
+    "name": "Testing Currency Code",
+    "demonym": "",
+    "majorSingle": "Test Unit",
+    "majorPlural": "Test Units",
+    "ISOnum": 963,
+    "symbol": "XTS",
+    "symbolNative": "XTS",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XUA": {
+    "name": "ADB Unit of Account",
+    "demonym": "African Development Bank",
+    "majorSingle": "Unit of Account",
+    "majorPlural": "Units of Account",
+    "ISOnum": 965,
+    "symbol": "XUA",
+    "symbolNative": "XUA",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
+  },
+  "XXX": {
+    "name": "No Currency",
+    "demonym": "",
+    "majorSingle": "No Currency",
+    "majorPlural": "No Currency",
+    "ISOnum": 999,
+    "symbol": "",
+    "symbolNative": "",
+    "minorSingle": "",
+    "minorPlural": "",
+    "ISOdigits": 0,
+    "decimals": 0,
+    "numToBasic": null
   },
   "YER": {
     "name": "Yemeni Rial",
@@ -2365,6 +2715,20 @@
     "decimals": 0,
     "numToBasic": null
   },
+  "ZWG": {
+    "name": "Zimbabwe Gold",
+    "demonym": "Zimbabwean",
+    "majorSingle": "ZiG",
+    "majorPlural": "ZiG",
+    "ISOnum": 924,
+    "symbol": "ZiG",
+    "symbolNative": "ZiG",
+    "minorSingle": "Cent",
+    "minorPlural": "Cents",
+    "ISOdigits": 2,
+    "decimals": 2,
+    "numToBasic": 100
+  },
   "ZWL": {
     "name": "Zimbabwean Dollar",
     "demonym": "Zimbabwean",
@@ -2375,34 +2739,6 @@
     "symbolNative": "$",
     "minorSingle": "Cent",
     "minorPlural": "Cents",
-    "ISOdigits": 2,
-    "decimals": 2,
-    "numToBasic": 100
-  },
-  "Abkhazia": {
-    "name": "Abkhazian Apsar",
-    "demonym": "Abkhazian",
-    "majorSingle": "Apsar",
-    "majorPlural": "Apsark",
-    "ISOnum": null,
-    "symbol": "",
-    "symbolNative": "",
-    "minorSingle": "",
-    "minorPlural": "",
-    "ISOdigits": 0,
-    "decimals": 0,
-    "numToBasic": null
-  },
-  "Artsakh": {
-    "name": "Artsakh Dram",
-    "demonym": "Artsakh",
-    "majorSingle": "Dram",
-    "majorPlural": "Dram",
-    "ISOnum": null,
-    "symbol": "դր.",
-    "symbolNative": "դր.",
-    "minorSingle": "Luma",
-    "minorPlural": "Luma",
     "ISOdigits": 2,
     "decimals": 2,
     "numToBasic": 100
