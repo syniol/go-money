@@ -197,3 +197,68 @@ func FuzzNewFromString(f *testing.F) {
 		_ = err
 	})
 }
+
+func TestCurrencyConfigs(t *testing.T) {
+	if len(currencyConfig) == 0 {
+		t.Fatal("currencyConfig map should not be empty")
+	}
+
+	for code, cfg := range currencyConfig {
+		if cfg.ISOCode != code {
+			t.Errorf("currency %s has mismatched ISOCode: %s", code, cfg.ISOCode)
+		}
+		if cfg.Decimals < 0 || cfg.Decimals > MaxSafeDecimals {
+			t.Errorf("currency %s has invalid decimals: %d", code, cfg.Decimals)
+		}
+		if cfg.ISODigits < 0 {
+			t.Errorf("currency %s has negative ISODigits: %d", code, cfg.ISODigits)
+		}
+		if cfg.Name == "" {
+			t.Errorf("currency %s has empty Name", code)
+		}
+	}
+}
+
+func TestSpecificISOCurrencies(t *testing.T) {
+	testCases := []struct {
+		code         string
+		expectedNum  int
+		expectedDec  int
+		stringInput  string
+		expectedUnit int64
+	}{
+		{"USD", 840, 2, "10.50", 1050},
+		{"EUR", 978, 2, "25.00", 2500},
+		{"JPY", 392, 0, "500", 500},
+		{"KRW", 410, 0, "1000", 1000},
+		{"VED", 926, 2, "15.75", 1575},
+		{"SLE", 925, 2, "100.50", 10050},
+		{"ZWG", 924, 2, "50.25", 5025},
+		{"XCG", 532, 2, "12.34", 1234},
+		{"CLF", 990, 4, "1.2345", 12345},
+		{"XAU", 959, 0, "10", 10},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.code, func(t *testing.T) {
+			cfg, exists := currencyConfig[tc.code]
+			if !exists {
+				t.Fatalf("currency %s does not exist in configuration", tc.code)
+			}
+			if cfg.ISONum != tc.expectedNum {
+				t.Errorf("%s ISONum = %d, want %d", tc.code, cfg.ISONum, tc.expectedNum)
+			}
+			if cfg.Decimals != tc.expectedDec {
+				t.Errorf("%s Decimals = %d, want %d", tc.code, cfg.Decimals, tc.expectedDec)
+			}
+
+			m, err := NewFromString(tc.stringInput, tc.code)
+			if err != nil {
+				t.Fatalf("NewFromString(%q, %q) returned error: %v", tc.stringInput, tc.code, err)
+			}
+			if m.Minor() != tc.expectedUnit {
+				t.Errorf("%s minor unit = %d, want %d", tc.code, m.Minor(), tc.expectedUnit)
+			}
+		})
+	}
+}
