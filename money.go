@@ -140,10 +140,6 @@ const (
 	// MaxStringLength limits input string length to prevent DoS attacks
 	// and ensure reasonable processing times.
 	MaxStringLength = 64
-
-	// MaxSafeAmount prevents overflow in financial calculations by maintaining
-	// a conservative upper bound for monetary amounts.
-	MaxSafeAmount = math.MaxInt64 / 10000
 )
 
 // Pre-computed powers of 10 for performance optimization.
@@ -162,7 +158,7 @@ func getPow10(n int) int64 {
 }
 
 // New creates a Money instance using int64 minor units with comprehensive
-// validation and overflow protection.
+// validation and currency configuration lookup.
 //
 // Parameters:
 //   - minorAmount: The amount in the currency's minor units (e.g., cents)
@@ -171,8 +167,7 @@ func getPow10(n int) int64 {
 // Returns:
 //   - Money: A valid Money instance
 //   - error: ErrInvalidCurrency if currency is not supported,
-//     ErrUnsafeScale if currency decimal precision exceeds safe limits,
-//     ErrAmountTooLarge if amount exceeds safe calculation bounds
+//     ErrUnsafeScale if currency decimal precision exceeds safe limits
 //
 // Example:
 //
@@ -202,15 +197,6 @@ func New(minorAmount int64, currencyCode string) (Money, error) {
 		}
 	}
 
-	if minorAmount > MaxSafeAmount || minorAmount < -MaxSafeAmount {
-		return Money{}, &MoneyError{
-			Op:       "New",
-			Amount:   strconv.FormatInt(minorAmount, 10),
-			Currency: currencyCode,
-			Err:      ErrAmountTooLarge,
-		}
-	}
-
 	return Money{
 		amount:   minorAmount,
 		currency: cfg,
@@ -235,12 +221,18 @@ func MustNew(minorAmount int64, currencyCode string) Money {
 }
 
 // NewFromString creates a Money instance from a string representation with
-// comprehensive input validation and security hardening.
+// comprehensive input validation, canonicalization, and security hardening.
 //
-// The function accepts various formats:
+// The function accepts standard ASCII numeric representations:
 //   - "10.50" (decimal notation)
 //   - "10" (integer notation)
 //   - "-5.25" (negative amounts)
+//
+// Security & Canonicalization:
+// Inputs must use standard ASCII digits ('0'-'9'), an optional leading '-', and an optional '.'.
+// Commas, whitespace, and non-ASCII Unicode numerals (e.g. Arabic-Indic, Devanagari, full-width)
+// are strictly rejected to prevent homograph attacks, localization confusion, and UI validation bypasses.
+// Upstream layers must canonicalize input before calling NewFromString.
 //
 // Parameters:
 //   - value: String representation of the monetary amount
@@ -333,18 +325,8 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 
 	var intPart, fracPart string
 	intPart = parts[0]
-
 	if len(parts) == 2 {
 		fracPart = parts[1]
-		// Error if provided decimals exceed currency definition
-		if len(fracPart) > cfg.Decimals {
-			return Money{}, &MoneyError{
-				Op:       "NewFromString",
-				Amount:   value,
-				Currency: currencyCode,
-				Err:      ErrTooMuchDetail,
-			}
-		}
 	}
 
 	// Validate integer digits
@@ -369,6 +351,16 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 				Currency: currencyCode,
 				Err:      ErrInvalidFormat,
 			}
+		}
+	}
+
+	// Error if provided decimals exceed currency definition
+	if len(fracPart) > cfg.Decimals {
+		return Money{}, &MoneyError{
+			Op:       "NewFromString",
+			Amount:   value,
+			Currency: currencyCode,
+			Err:      ErrTooMuchDetail,
 		}
 	}
 
@@ -443,9 +435,9 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 // FromDecimal converts a high-precision decimal value into a Money value
 // using the specified rounding strategy.
 //
-// WARNING: Converting from float64 inherently carries IEEE-754 binary floating-point inaccuracy
+// Deprecated: Converting from float64 inherently carries IEEE-754 binary floating-point inaccuracy
 // (e.g. 1.005 cannot be represented exactly in binary float64). For guaranteed exactness without
-// precision loss, prefer NewFromString or integer-based New.
+// precision loss in enterprise banking systems, prefer NewFromString or integer-based New.
 //
 // In financial systems, Banker's Rounding (RoundHalfToEven) is preferred
 // because it reduces cumulative bias in large datasets of calculations.
@@ -829,7 +821,7 @@ func (m Money) String() string {
 }
 
 // LocalisedString returns a locale-aware formatted string using CLDR rules
-// for the specified language tag.
+// for the specified language tag without floating-point precision loss.
 //
 // The Common Locale Data Repository (CLDR) contains formatting rules for
 // every culture, including decimal separators, grouping, and symbol placement.
@@ -850,10 +842,55 @@ func (m Money) LocalisedString(tag language.Tag) string {
 		return m.String()
 	}
 
-	// Convert to decimal value for CLDR formatting
-	decimalValue := float64(m.amount) / float64(getPow10(m.currency.Decimals))
+	val := m.amount
+	isNeg := val < 0
 
-	raw := p.Sprint(currency.NarrowSymbol(cur.Amount(decimalValue)))
+	var uval uint64
+	if isNeg {
+		uval = uint64(-val)
+	} else {
+		uval = uint64(val)
+	}
+
+	var numberStr string
+	if m.currency.Decimals == 0 {
+		numberStr = p.Sprintf("%d", uval)
+	} else {
+		divisor := uint64(getPow10(m.currency.Decimals))
+		intPart := uval / divisor
+		fracPart := uval % divisor
+
+		// Determine locale decimal separator from zero-safe float formatting
+		sample := p.Sprintf("%.1f", 0.0)
+		decSep := "."
+		if len(sample) >= 3 {
+			decSep = sample[1 : len(sample)-1]
+		}
+
+		fracFormat := fmt.Sprintf("%%0%dd", m.currency.Decimals)
+		fracStr := fmt.Sprintf(fracFormat, fracPart)
+		numberStr = p.Sprintf("%d", intPart) + decSep + fracStr
+	}
+
+	if isNeg {
+		numberStr = "-" + numberStr
+	}
+
+	// Use CLDR currency template for symbol positioning
+	var sampleAmount float64 = 1.0
+	if isNeg {
+		sampleAmount = -1.0
+	}
+	sampleTemplate := p.Sprint(currency.NarrowSymbol(cur.Amount(sampleAmount)))
+	samplePlaceholder := p.Sprintf("%.*f", m.currency.Decimals, sampleAmount)
+
+	var raw string
+	if strings.Contains(sampleTemplate, samplePlaceholder) {
+		raw = strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
+	} else {
+		// Fallback if template substitution fails
+		raw = m.currency.Symbol + numberStr
+	}
 
 	// Remove Unicode whitespace while preserving currency symbols and digits
 	return strings.Map(func(r rune) rune {
