@@ -518,6 +518,33 @@ func TestFromDecimal_OverflowAndInf(t *testing.T) {
 	}
 }
 
+func TestMoney_Split_Bounds(t *testing.T) {
+	m := MustNew(1000, "USD")
+
+	// Valid split
+	parts, err := m.Split(3)
+	if err != nil || len(parts) != 3 {
+		t.Fatalf("Split(3) failed: %v", err)
+	}
+
+	// Zero or negative splits
+	_, err = m.Split(0)
+	if !errors.Is(err, ErrInvalidSplitCount) {
+		t.Errorf("Split(0) error = %v, want ErrInvalidSplitCount", err)
+	}
+
+	_, err = m.Split(-5)
+	if !errors.Is(err, ErrInvalidSplitCount) {
+		t.Errorf("Split(-5) error = %v, want ErrInvalidSplitCount", err)
+	}
+
+	// Exceeding MaxSplitParts (OOM prevention)
+	_, err = m.Split(MaxSplitParts + 1)
+	if !errors.Is(err, ErrInvalidSplitCount) {
+		t.Errorf("Split(%d) error = %v, want ErrInvalidSplitCount", MaxSplitParts+1, err)
+	}
+}
+
 func TestGetPow10_Panic(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
