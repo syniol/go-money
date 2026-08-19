@@ -44,9 +44,10 @@ var (
 	ErrCurrencyMismatch = errors.New("currencies do not match")
 	ErrOverflow         = errors.New("arithmetic overflow")
 	ErrAmountTooLarge   = errors.New("amount exceeds maximum safe value")
-	ErrInputTooLong     = errors.New("input string exceeds maximum allowed length")
-	ErrEmptyInput       = errors.New("input string cannot be empty")
-	ErrMalformedInput   = errors.New("input contains invalid characters or structure")
+	ErrInputTooLong        = errors.New("input string exceeds maximum allowed length")
+	ErrEmptyInput          = errors.New("input string cannot be empty")
+	ErrMalformedInput      = errors.New("input contains invalid characters or structure")
+	ErrInvalidSplitCount   = errors.New("split count must be between 1 and 10000")
 )
 
 // MoneyError provides structured error information for operational debugging
@@ -140,6 +141,10 @@ const (
 	// MaxStringLength limits input string length to prevent DoS attacks
 	// and ensure reasonable processing times.
 	MaxStringLength = 64
+
+	// MaxSplitParts limits the maximum number of parts for a Split operation
+	// to prevent memory exhaustion (OOM) attacks.
+	MaxSplitParts = 10000
 )
 
 // Pre-computed powers of 10 for performance optimization.
@@ -423,8 +428,24 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 		fractionalAmount := parsedFrac * fracMultiplier
 
 		if strings.HasPrefix(intPart, "-") {
+			if totalAmount < math.MinInt64+fractionalAmount {
+				return Money{}, &MoneyError{
+					Op:       "NewFromString",
+					Amount:   value,
+					Currency: currencyCode,
+					Err:      ErrAmountTooLarge,
+				}
+			}
 			totalAmount -= fractionalAmount
 		} else {
+			if totalAmount > math.MaxInt64-fractionalAmount {
+				return Money{}, &MoneyError{
+					Op:       "NewFromString",
+					Amount:   value,
+					Currency: currencyCode,
+					Err:      ErrAmountTooLarge,
+				}
+			}
 			totalAmount += fractionalAmount
 		}
 	}
@@ -477,6 +498,15 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	// Convert to the scale of the minor unit
 	multiplier := float64(getPow10(cfg.Decimals))
 	scaledValue := value * multiplier
+
+	if math.IsNaN(scaledValue) || math.IsInf(scaledValue, 0) || scaledValue > float64(math.MaxInt64) || scaledValue < float64(math.MinInt64) {
+		return Money{}, &MoneyError{
+			Op:       "FromDecimal",
+			Amount:   fmt.Sprintf("%.6f", value),
+			Currency: currencyCode,
+			Err:      ErrAmountTooLarge,
+		}
+	}
 
 	var rounded int64
 	switch mode {
@@ -722,6 +752,8 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 // Split divides the money into N parts, distributing any remainder
 // fairly across the first remainder parts.
 //
+// To prevent memory exhaustion (OOM) attacks, N is constrained up to MaxSplitParts (10,000).
+//
 // This is critical for reconciliation in financial systems where
 // the sum of parts must exactly equal the original amount.
 //
@@ -731,10 +763,10 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 //	parts, err := total.Split(3)       // [$0.34, $0.33, $0.33]
 //	// Note: $0.34 + $0.33 + $0.33 = $1.00 exactly
 func (m Money) Split(n int) ([]Money, error) {
-	if n <= 0 {
+	if n <= 0 || n > MaxSplitParts {
 		return nil, &MoneyError{
 			Op:  "Split",
-			Err: errors.New("split count must be positive"),
+			Err: ErrInvalidSplitCount,
 		}
 	}
 
