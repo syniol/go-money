@@ -153,13 +153,12 @@ var pow10 = [...]int64{
 	100000000, 1000000000, 10000000000, 100000000000, 1000000000000,
 }
 
-// getPow10 returns 10^n efficiently using a lookup table for common values.
+// getPow10 returns 10^n efficiently using a lookup table for supported scales.
 func getPow10(n int) int64 {
 	if n >= 0 && n < len(pow10) {
 		return pow10[n]
 	}
-	// Fallback for unusual cases (should be rare in practice)
-	return int64(math.Pow10(n))
+	panic(fmt.Sprintf("money: scale %d exceeds maximum supported scale %d", n, MaxSafeDecimals))
 }
 
 // New creates a Money instance using int64 minor units with comprehensive
@@ -242,7 +241,6 @@ func MustNew(minorAmount int64, currencyCode string) Money {
 //   - "10.50" (decimal notation)
 //   - "10" (integer notation)
 //   - "-5.25" (negative amounts)
-//   - "1,000.50" (with thousand separators, which are stripped)
 //
 // Parameters:
 //   - value: String representation of the monetary amount
@@ -301,6 +299,16 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 		}
 	}
 
+	// Reject comma-containing strings to prevent ambiguity and malformed inputs
+	if strings.Contains(value, ",") {
+		return Money{}, &MoneyError{
+			Op:       "NewFromString",
+			Amount:   value,
+			Currency: currencyCode,
+			Err:      ErrInvalidFormat,
+		}
+	}
+
 	// Structural validation
 	if strings.Count(value, ".") > 1 ||
 		strings.Count(value, "-") > 1 ||
@@ -339,8 +347,33 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 		}
 	}
 
-	// Normalize by removing thousand separators
-	intPart = strings.ReplaceAll(intPart, ",", "")
+	// Validate integer digits
+	digits := intPart
+	if strings.HasPrefix(digits, "-") {
+		digits = digits[1:]
+	}
+	for _, r := range digits {
+		if r < '0' || r > '9' {
+			return Money{}, &MoneyError{
+				Op:       "NewFromString",
+				Amount:   value,
+				Currency: currencyCode,
+				Err:      ErrInvalidFormat,
+			}
+		}
+	}
+
+	// Validate fractional digits
+	for _, r := range fracPart {
+		if r < '0' || r > '9' {
+			return Money{}, &MoneyError{
+				Op:       "NewFromString",
+				Amount:   value,
+				Currency: currencyCode,
+				Err:      ErrInvalidFormat,
+			}
+		}
+	}
 
 	// Handle the integer part
 	var totalAmount int64
@@ -412,6 +445,10 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 
 // FromDecimal converts a high-precision decimal value into a Money value
 // using the specified rounding strategy.
+//
+// WARNING: Converting from float64 inherently carries IEEE-754 binary floating-point inaccuracy
+// (e.g. 1.005 cannot be represented exactly in binary float64). For guaranteed exactness without
+// precision loss, prefer NewFromString or integer-based New.
 //
 // In financial systems, Banker's Rounding (RoundHalfToEven) is preferred
 // because it reduces cumulative bias in large datasets of calculations.
@@ -493,7 +530,7 @@ func (m Money) Currency() string {
 }
 
 // AsDecimalString returns a decimal string representation for display
-// or interoperability purposes.
+// or interoperability purposes without floating-point precision loss.
 //
 // WARNING: This method is provided ONLY for display, logging, or
 // integration with decimal libraries. NEVER use this result in
@@ -514,9 +551,46 @@ func (m Money) AsDecimalString() string {
 		return strconv.FormatInt(m.amount, 10)
 	}
 
-	divisor := float64(getPow10(m.currency.Decimals))
-	floatVal := float64(m.amount) / divisor
-	return fmt.Sprintf("%.*f", m.currency.Decimals, floatVal)
+	val := m.amount
+	isNeg := val < 0
+
+	var uval uint64
+	if isNeg {
+		uval = uint64(-val)
+	} else {
+		uval = uint64(val)
+	}
+
+	decimals := m.currency.Decimals
+	var buf [32]byte
+	n := len(buf)
+
+	for i := 0; i < decimals; i++ {
+		n--
+		buf[n] = byte('0' + (uval % 10))
+		uval /= 10
+	}
+
+	n--
+	buf[n] = '.'
+
+	if uval == 0 {
+		n--
+		buf[n] = '0'
+	} else {
+		for uval > 0 {
+			n--
+			buf[n] = byte('0' + (uval % 10))
+			uval /= 10
+		}
+	}
+
+	if isNeg {
+		n--
+		buf[n] = '-'
+	}
+
+	return string(buf[n:])
 }
 
 // IsEqual performs a safe equality comparison between two Money values.
@@ -639,11 +713,17 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 			return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
 		}
 	} else { // multiplier < 0
-		if m.amount > 0 && m.amount > math.MinInt64/multiplier {
-			return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
-		}
-		if m.amount < 0 && m.amount < math.MaxInt64/multiplier {
-			return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+		if multiplier == -1 {
+			if m.amount == math.MinInt64 {
+				return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+			}
+		} else {
+			if m.amount > 0 && m.amount > math.MinInt64/multiplier {
+				return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+			}
+			if m.amount < 0 && m.amount < math.MaxInt64/multiplier {
+				return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+			}
 		}
 	}
 
@@ -738,7 +818,7 @@ func (m Money) IsNegative() bool {
 }
 
 // String returns a formatted string representation of the Money value
-// using the currency's symbol and appropriate decimal places.
+// using the currency's symbol and appropriate decimal places without floating-point precision loss.
 //
 // Example:
 //
@@ -748,16 +828,7 @@ func (m Money) String() string {
 	if m.currency == nil {
 		return "0"
 	}
-
-	if m.currency.Decimals == 0 {
-		return fmt.Sprintf("%s%d", m.currency.Symbol, m.amount)
-	}
-
-	divisor := float64(getPow10(m.currency.Decimals))
-	floatVal := float64(m.amount) / divisor
-
-	format := fmt.Sprintf("%%s%%.%df", m.currency.Decimals)
-	return fmt.Sprintf(format, m.currency.Symbol, floatVal)
+	return m.currency.Symbol + m.AsDecimalString()
 }
 
 // LocalisedString returns a locale-aware formatted string using CLDR rules
