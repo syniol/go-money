@@ -348,10 +348,7 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 	}
 
 	// Validate integer digits
-	digits := intPart
-	if strings.HasPrefix(digits, "-") {
-		digits = digits[1:]
-	}
+	digits := strings.TrimPrefix(intPart, "-")
 	for _, r := range digits {
 		if r < '0' || r > '9' {
 			return Money{}, &MoneyError{
