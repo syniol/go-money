@@ -3,7 +3,11 @@ package money
 import (
 	"encoding/json"
 	"errors"
+	"math"
+	"strings"
 	"testing"
+
+	"golang.org/x/text/language"
 )
 
 func TestNew_And_MustNew(t *testing.T) {
@@ -352,6 +356,9 @@ func TestNewFromString_CommasAndValidation(t *testing.T) {
 		{"letter in fraction", "12.3b", "USD", ErrInvalidFormat},
 		{"multiple dots", "10.50.30", "USD", ErrMalformedInput},
 		{"misplaced minus", "10-50", "USD", ErrMalformedInput},
+		{"arabic indic numerals", "١٠.٥٠", "USD", ErrInvalidFormat},
+		{"devanagari numerals", "१०.५०", "USD", ErrInvalidFormat},
+		{"full width numerals", "１０.５０", "USD", ErrInvalidFormat},
 	}
 
 	for _, tt := range tests {
@@ -361,6 +368,80 @@ func TestNewFromString_CommasAndValidation(t *testing.T) {
 				t.Errorf("NewFromString(%q, %q) error = %v, want %v", tt.val, tt.currency, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestSovereignScaleAmounts(t *testing.T) {
+	// 1.26 Quadrillion VND ($50B corporate acquisition in VND)
+	vnd, err := New(1260000000000000, "VND")
+	if err != nil {
+		t.Fatalf("New failed for sovereign scale VND: %v", err)
+	}
+	if vnd.Minor() != 1260000000000000 {
+		t.Errorf("got %d, want 1260000000000000", vnd.Minor())
+	}
+	if vnd.AsDecimalString() != "1260000000000000" {
+		t.Errorf("VND AsDecimalString = %s, want 1260000000000000", vnd.AsDecimalString())
+	}
+
+	// 1.6 Quadrillion IDR
+	idr, err := New(1600000000000000, "IDR")
+	if err != nil {
+		t.Fatalf("New failed for sovereign scale IDR: %v", err)
+	}
+	if idr.Minor() != 1600000000000000 {
+		t.Errorf("got %d, want 1600000000000000", idr.Minor())
+	}
+
+	// MaxInt64 and MinInt64 boundary testing for zero-decimal currency
+	jpyMax, err := New(math.MaxInt64, "JPY")
+	if err != nil {
+		t.Fatalf("New failed for MaxInt64 JPY: %v", err)
+	}
+	if jpyMax.Minor() != math.MaxInt64 {
+		t.Errorf("got %d, want %d", jpyMax.Minor(), int64(math.MaxInt64))
+	}
+
+	jpyMin, err := New(math.MinInt64, "JPY")
+	if err != nil {
+		t.Fatalf("New failed for MinInt64 JPY: %v", err)
+	}
+	if jpyMin.Minor() != math.MinInt64 {
+		t.Errorf("got %d, want %d", jpyMin.Minor(), int64(math.MinInt64))
+	}
+}
+
+func TestLocalisedString_ExactPrecision(t *testing.T) {
+	// Value exceeding 2^53 (9,007,199,254,740,992 minor units)
+	// $90,071,992,547,409.93
+	m := MustNew(9007199254740993, "USD")
+
+	gotEN := m.LocalisedString(language.AmericanEnglish)
+	if gotEN != "$90,071,992,547,409.93" {
+		t.Errorf("LocalisedString(en-US) = %q, want %q", gotEN, "$90,071,992,547,409.93")
+	}
+
+	gotDE := m.LocalisedString(language.German)
+	// German uses '.' for thousands and ',' for decimal
+	if gotDE != "90.071.992.547.409,93$" && gotDE != "$90.071.992.547.409,93" && gotDE != "90.071.992.547.409,93\u00a0$" {
+		// Verify digits and separators are preserved without float precision loss
+		if !strings.Contains(gotDE, "90.071.992.547.409,93") && !strings.Contains(gotDE, "90.071.992.547.409.93") {
+			t.Errorf("LocalisedString(de) = %q, expected exact digits preserved", gotDE)
+		}
+	}
+
+	// Zero decimal high precision currency
+	jpy := MustNew(9007199254740993, "JPY")
+	gotJPY := jpy.LocalisedString(language.Japanese)
+	if !strings.Contains(gotJPY, "9,007,199,254,740,993") {
+		t.Errorf("LocalisedString(ja JPY) = %q, want contains 9,007,199,254,740,993", gotJPY)
+	}
+
+	// Negative value
+	neg := MustNew(-123456, "USD")
+	gotNeg := neg.LocalisedString(language.AmericanEnglish)
+	if gotNeg != "-$1,234.56" && gotNeg != "$-1,234.56" && gotNeg != "($1,234.56)" {
+		t.Errorf("LocalisedString(neg USD) = %q", gotNeg)
 	}
 }
 
