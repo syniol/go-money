@@ -181,24 +181,42 @@ func TestJSON_Marshaling(t *testing.T) {
 
 // FuzzNewFromString throws random byte sequences and parameters at our string parser.
 // To run this: `go test -fuzz=FuzzNewFromString`
-// The goal is to ensure the parser NEVER panics, no matter what garbage the network sends it.
+// It asserts both panic-freedom and mathematical invariants (e.g. sign preservation).
 func FuzzNewFromString(f *testing.F) {
 	// Provide seed corpus (examples of valid and tricky inputs)
 	f.Add("10.50", "USD")
 	f.Add("-100.99", "GBP")
 	f.Add("0.00", "EUR")
-	f.Add("9999999999999999.99", "USD") // Boundary test
+	f.Add("92233720368547758.07", "USD") // Boundary test (MaxInt64 for 2 decimals)
+	f.Add("92233720368547758.08", "USD") // Overflow boundary test
+	f.Add("-92233720368547758.08", "USD") // MinInt64 boundary test
+	f.Add("-92233720368547758.09", "USD") // Underflow boundary test
+	f.Add("9999999999999999.99", "USD")
 	f.Add("NaN", "USD")
 	f.Add("10.50.30", "USD")
 
 	f.Fuzz(func(t *testing.T, val string, currencyCode string) {
-		// We do not assert against specific errors here.
-		// A fuzz test passes if the function returns an error gracefully WITHOUT panicking.
-		_, err := NewFromString(val, currencyCode)
+		got, err := NewFromString(val, currencyCode)
+		if err != nil {
+			return
+		}
 
-		// If you want to be extremely strict, you could assert that IF err == nil,
-		// the output matches a secondary slower (but proven) implementation to check for logical bugs.
-		_ = err
+		// Invariant 1: Currency configuration must match requested code
+		if got.Currency() != currencyCode {
+			t.Errorf("currency mismatch: got %q, want %q", got.Currency(), currencyCode)
+		}
+
+		// Invariant 2: Positive input without '-' must have non-negative minor amount
+		trimmed := strings.TrimSpace(val)
+		if !strings.HasPrefix(trimmed, "-") {
+			if got.Minor() < 0 {
+				t.Errorf("positive input %q produced negative minor amount %d (silent wrap-around!)", val, got.Minor())
+			}
+		} else {
+			if got.Minor() > 0 {
+				t.Errorf("negative input %q produced positive minor amount %d (silent wrap-around!)", val, got.Minor())
+			}
+		}
 	})
 }
 
@@ -442,6 +460,61 @@ func TestLocalisedString_ExactPrecision(t *testing.T) {
 	gotNeg := neg.LocalisedString(language.AmericanEnglish)
 	if gotNeg != "-$1,234.56" && gotNeg != "$-1,234.56" && gotNeg != "($1,234.56)" {
 		t.Errorf("LocalisedString(neg USD) = %q", gotNeg)
+	}
+}
+
+func TestNewFromString_QuadrillionDollarBug(t *testing.T) {
+	// Exact MaxInt64 for 2 decimal currency ($92,233,720,368,547,758.07)
+	maxUSD, err := NewFromString("92233720368547758.07", "USD")
+	if err != nil {
+		t.Fatalf("NewFromString failed for MaxInt64 USD: %v", err)
+	}
+	if maxUSD.Minor() != math.MaxInt64 {
+		t.Errorf("got %d, want %d (math.MaxInt64)", maxUSD.Minor(), int64(math.MaxInt64))
+	}
+
+	// +1 cent beyond MaxInt64 must fail with ErrAmountTooLarge, NOT wrap around to negative
+	_, err = NewFromString("92233720368547758.08", "USD")
+	if !errors.Is(err, ErrAmountTooLarge) {
+		t.Errorf("NewFromString(92233720368547758.08, USD) error = %v, want ErrAmountTooLarge", err)
+	}
+
+	// Exact MinInt64 for 2 decimal currency (-$92,233,720,368,547,758.08)
+	minUSD, err := NewFromString("-92233720368547758.08", "USD")
+	if err != nil {
+		t.Fatalf("NewFromString failed for MinInt64 USD: %v", err)
+	}
+	if minUSD.Minor() != math.MinInt64 {
+		t.Errorf("got %d, want %d (math.MinInt64)", minUSD.Minor(), int64(math.MinInt64))
+	}
+
+	// -1 cent beyond MinInt64 must fail with ErrAmountTooLarge, NOT wrap around to positive
+	_, err = NewFromString("-92233720368547758.09", "USD")
+	if !errors.Is(err, ErrAmountTooLarge) {
+		t.Errorf("NewFromString(-92233720368547758.09, USD) error = %v, want ErrAmountTooLarge", err)
+	}
+}
+
+func TestFromDecimal_OverflowAndInf(t *testing.T) {
+	tests := []struct {
+		name    string
+		val     float64
+		wantErr error
+	}{
+		{"massive float positive", 1e22, ErrAmountTooLarge},
+		{"massive float negative", -1e22, ErrAmountTooLarge},
+		{"NaN", math.NaN(), ErrAmountTooLarge},
+		{"positive infinity", math.Inf(1), ErrAmountTooLarge},
+		{"negative infinity", math.Inf(-1), ErrAmountTooLarge},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := FromDecimal(tt.val, "USD", RoundHalfToEven)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("FromDecimal(%v, USD) error = %v, want %v", tt.val, err, tt.wantErr)
+			}
+		})
 	}
 }
 

@@ -423,8 +423,24 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 		fractionalAmount := parsedFrac * fracMultiplier
 
 		if strings.HasPrefix(intPart, "-") {
+			if totalAmount < math.MinInt64+fractionalAmount {
+				return Money{}, &MoneyError{
+					Op:       "NewFromString",
+					Amount:   value,
+					Currency: currencyCode,
+					Err:      ErrAmountTooLarge,
+				}
+			}
 			totalAmount -= fractionalAmount
 		} else {
+			if totalAmount > math.MaxInt64-fractionalAmount {
+				return Money{}, &MoneyError{
+					Op:       "NewFromString",
+					Amount:   value,
+					Currency: currencyCode,
+					Err:      ErrAmountTooLarge,
+				}
+			}
 			totalAmount += fractionalAmount
 		}
 	}
@@ -477,6 +493,15 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	// Convert to the scale of the minor unit
 	multiplier := float64(getPow10(cfg.Decimals))
 	scaledValue := value * multiplier
+
+	if math.IsNaN(scaledValue) || math.IsInf(scaledValue, 0) || scaledValue > float64(math.MaxInt64) || scaledValue < float64(math.MinInt64) {
+		return Money{}, &MoneyError{
+			Op:       "FromDecimal",
+			Amount:   fmt.Sprintf("%.6f", value),
+			Currency: currencyCode,
+			Err:      ErrAmountTooLarge,
+		}
+	}
 
 	var rounded int64
 	switch mode {
