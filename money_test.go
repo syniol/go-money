@@ -262,3 +262,186 @@ func TestSpecificISOCurrencies(t *testing.T) {
 		})
 	}
 }
+
+func TestMul_NegativeMultiplier(t *testing.T) {
+	m := MustNew(1000, "USD")
+
+	// Multiplying positive amount by -1
+	res, err := m.Mul(-1)
+	if err != nil {
+		t.Fatalf("m.Mul(-1) failed: %v", err)
+	}
+	if res.Minor() != -1000 {
+		t.Errorf("got %d, want -1000", res.Minor())
+	}
+
+	// Multiplying negative amount by -1
+	neg := MustNew(-1000, "USD")
+	res, err = neg.Mul(-1)
+	if err != nil {
+		t.Fatalf("neg.Mul(-1) failed: %v", err)
+	}
+	if res.Minor() != 1000 {
+		t.Errorf("got %d, want 1000", res.Minor())
+	}
+
+	// Multiplying by negative factor
+	res, err = m.Mul(-5)
+	if err != nil {
+		t.Fatalf("m.Mul(-5) failed: %v", err)
+	}
+	if res.Minor() != -5000 {
+		t.Errorf("got %d, want -5000", res.Minor())
+	}
+
+	// Zero multipliers
+	res, err = m.Mul(0)
+	if err != nil || res.Minor() != 0 {
+		t.Errorf("m.Mul(0) failed")
+	}
+
+	zero := MustNew(0, "USD")
+	res, err = zero.Mul(-1)
+	if err != nil || res.Minor() != 0 {
+		t.Errorf("zero.Mul(-1) failed")
+	}
+}
+
+func TestAsDecimalString_HighPrecision(t *testing.T) {
+	tests := []struct {
+		name     string
+		amount   int64
+		currency string
+		wantStr  string
+	}{
+		{"zero USD", 0, "USD", "0.00"},
+		{"one cent USD", 1, "USD", "0.01"},
+		{"five cents USD", 5, "USD", "0.05"},
+		{"negative cent USD", -1, "USD", "-0.01"},
+		{"negative five cents USD", -5, "USD", "-0.05"},
+		{"large USD beyond float64 53-bit precision", 9007199254740993, "USD", "90071992547409.93"},
+		{"negative large USD", -9007199254740993, "USD", "-90071992547409.93"},
+		{"zero decimals JPY", 500, "JPY", "500"},
+		{"zero decimals negative JPY", -500, "JPY", "-500"},
+		{"three decimals KWD", 1234, "KWD", "1.234"},
+		{"four decimals CLF", 12345, "CLF", "1.2345"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := Money{amount: tt.amount, currency: currencyConfig[tt.currency]}
+			got := m.AsDecimalString()
+			if got != tt.wantStr {
+				t.Errorf("AsDecimalString() = %q, want %q", got, tt.wantStr)
+			}
+		})
+	}
+}
+
+func TestNewFromString_CommasAndValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		val      string
+		currency string
+		wantErr  error
+	}{
+		{"comma in integer part", "1,000.50", "USD", ErrInvalidFormat},
+		{"double comma", "1,,000", "USD", ErrInvalidFormat},
+		{"malformed comma", "10,0", "USD", ErrInvalidFormat},
+		{"letter in integer", "12a.34", "USD", ErrInvalidFormat},
+		{"letter in fraction", "12.3b", "USD", ErrInvalidFormat},
+		{"multiple dots", "10.50.30", "USD", ErrMalformedInput},
+		{"misplaced minus", "10-50", "USD", ErrMalformedInput},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewFromString(tt.val, tt.currency)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("NewFromString(%q, %q) error = %v, want %v", tt.val, tt.currency, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetPow10_Panic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("getPow10 should panic on out-of-range scale")
+		}
+	}()
+	_ = getPow10(99)
+}
+
+func BenchmarkNewFromString(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, _ = NewFromString("1234.56", "USD")
+	}
+}
+
+func BenchmarkAdd(b *testing.B) {
+	m1 := MustNew(1000, "USD")
+	m2 := MustNew(500, "USD")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = m1.Add(m2)
+	}
+}
+
+func BenchmarkSub(b *testing.B) {
+	m1 := MustNew(1000, "USD")
+	m2 := MustNew(500, "USD")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = m1.Sub(m2)
+	}
+}
+
+func BenchmarkMul(b *testing.B) {
+	m := MustNew(1000, "USD")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = m.Mul(3)
+	}
+}
+
+func BenchmarkAsDecimalString(b *testing.B) {
+	m := MustNew(123456, "USD")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.AsDecimalString()
+	}
+}
+
+func BenchmarkString(b *testing.B) {
+	m := MustNew(123456, "USD")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.String()
+	}
+}
+
+func BenchmarkMarshalJSON(b *testing.B) {
+	m := MustNew(123456, "USD")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = m.MarshalJSON()
+	}
+}
+
+func BenchmarkUnmarshalJSON(b *testing.B) {
+	data := []byte(`{"amount":"1234.56","currency":"USD"}`)
+	var m Money
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.UnmarshalJSON(data)
+	}
+}
