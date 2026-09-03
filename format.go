@@ -12,9 +12,11 @@ import (
 
 // AsDecimalString renders the amount as an ASCII decimal string. Use it for
 // display or transport; never for arithmetic, which must stay on Minor().
+// A zero-value Money (no currency) renders as the empty string so accidental
+// use in logs is visually obvious rather than looking like a real "0".
 func (m Money) AsDecimalString() string {
 	if m.currency == nil {
-		return "0"
+		return ""
 	}
 	if m.currency.Decimals == 0 {
 		return strconv.FormatInt(m.amount, 10)
@@ -55,10 +57,12 @@ func (m Money) AsDecimalString() string {
 	return string(buf[n:])
 }
 
-// String returns the currency symbol followed by the decimal string.
+// String returns the currency symbol followed by the decimal string, or the
+// empty string for a zero-value Money so logs never quietly render "0"
+// without a currency.
 func (m Money) String() string {
 	if m.currency == nil {
-		return "0"
+		return ""
 	}
 	return m.currency.Symbol + m.AsDecimalString()
 }
@@ -69,7 +73,7 @@ func (m Money) String() string {
 // legitimate thousands separators in French, Russian, Swedish and others.
 func (m Money) LocalisedString(tag language.Tag) string {
 	if m.currency == nil {
-		return "0"
+		return ""
 	}
 	p := message.NewPrinter(tag)
 	cur, err := currency.ParseISO(m.currency.ISOCode)
