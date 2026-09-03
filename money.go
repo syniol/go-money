@@ -92,13 +92,13 @@ func (e *MoneyError) Unwrap() error {
 //	fmt.Println(m.String()) // Output: $10.50
 type Money struct {
 	amount   int64   // Amount in minor units (e.g., cents for USD)
-	currency *Config // Immutable currency configuration
+	currency *Currency // Immutable currency configuration
 }
 
-// Config contains immutable currency configuration data.
+// Currency contains immutable ISO 4217 metadata for a supported currency.
 // This structure is populated at package initialization and should never
 // be modified after creation to ensure thread safety.
-type Config struct {
+type Currency struct {
 	ISOCode      string // ISO 4217 currency code (e.g., "USD", "EUR")
 	Name         string // Full currency name (e.g., "US Dollar")
 	Demonym      string // Currency demonym (e.g., "American")
@@ -978,8 +978,8 @@ func (m *Money) UnmarshalJSON(data []byte) error {
 }
 
 // validateScale ensures the currency decimal precision is safe for int64 arithmetic.
-func validateScale(cfg *Config) error {
-	if cfg.Decimals > MaxSafeDecimals {
+func validateScale(c *Currency) error {
+	if c.Decimals > MaxSafeDecimals {
 		return ErrUnsafeScale
 	}
 	return nil
