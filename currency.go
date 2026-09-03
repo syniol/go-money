@@ -24,12 +24,28 @@ type Currency struct {
 const (
 	// MaxSafeDecimals is the largest decimal precision that fits in int64
 	// arithmetic without risking overflow on typical monetary amounts.
+	//
+	// int64 holds values up to math.MaxInt64 = 9223372036854775807, which is
+	// 19 decimal digits. Reserving 12 digits for the fractional part leaves
+	// 7 digits (up to 9999999) of major-unit headroom, which comfortably
+	// covers every real currency's practical range. Currencies with more
+	// than 12 decimal places are refused by validateScale.
 	MaxSafeDecimals = 12
 
-	// MaxStringLength caps NewFromString input to prevent pathological input.
+	// MaxStringLength caps NewFromString input to guarantee bounded parse
+	// time and reject pathological input.
+	//
+	// The widest legitimate amount is a signed 4-decimal currency at
+	// MaxInt64 (e.g. CLF), which is "-922337203685477.5807", 22 bytes. 64
+	// bytes gives ample room for extra leading zeros in the integer part
+	// without ever admitting adversarial multi-kilobyte input.
 	MaxStringLength = 64
 
 	// MaxSplitParts caps Split fan-out to prevent memory exhaustion.
+	//
+	// A single Split call allocates a []Money slice of length n. At 16 bytes
+	// per Money on 64-bit builds, 10000 parts is 160 KB, an amount an
+	// attacker cannot use to exhaust memory even under repeated calls.
 	MaxSplitParts = 10000
 
 	// ISONumUnknown is the sentinel written to Currency.ISONum when the
