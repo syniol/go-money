@@ -792,3 +792,12 @@ func TestCurrency_HasISONum(t *testing.T) {
 	}
 	_ = seenUnknown
 }
+
+func TestNewFromString_OverflowingIntegerPart(t *testing.T) {
+	// "99999999999999999999" (20 nines) exceeds MaxInt64 and must be
+	// classified as ErrAmountTooLarge, not ErrInvalidFormat.
+	_, err := NewFromString("99999999999999999999", "USD")
+	if !errors.Is(err, ErrAmountTooLarge) {
+		t.Errorf("err = %v, want ErrAmountTooLarge", err)
+	}
+}
