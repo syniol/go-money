@@ -111,12 +111,14 @@ func TestArithmetic_And_Comparisons(t *testing.T) {
 		t.Error("Mul failed")
 	}
 
-	// Comparisons
-	less, _ := m5.IsLessThan(m10)
-	greater, _ := m10.IsGreaterThan(m5)
-	equal, _ := m10.IsEqual(m10)
-	if !less || !greater || !equal {
+	// Comparisons via Compare and Equal
+	lessCmp, _ := m5.Compare(m10)
+	greaterCmp, _ := m10.Compare(m5)
+	if lessCmp != -1 || greaterCmp != 1 || !m10.Equal(m10) {
 		t.Error("Comparison logic error")
+	}
+	if m10.Equal(m5) {
+		t.Error("Equal returned true for unequal amounts")
 	}
 
 	// Compare method

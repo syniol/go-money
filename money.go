@@ -612,37 +612,14 @@ func (m Money) AsDecimalString() string {
 	return string(buf[n:])
 }
 
-// IsEqual performs a safe equality comparison between two Money values.
-// Returns an error if the currencies don't match.
-//
-// Example:
-//
-//	m1 := money.MustNew(1000, "USD")
-//	m2 := money.MustNew(1000, "USD")
-//	equal, err := m1.IsEqual(m2) // true, nil
-func (m Money) IsEqual(other Money) (bool, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return false, err
+// Equal reports whether m and other have the same currency and amount. It
+// returns false rather than an error on currency mismatch, matching the
+// shape of time.Time.Equal so it can be used inline in conditionals.
+func (m Money) Equal(other Money) bool {
+	if m.currency == nil || other.currency == nil {
+		return false
 	}
-	return m.amount == other.amount, nil
-}
-
-// IsLessThan performs a safe less-than comparison between two Money values.
-// Returns an error if the currencies don't match.
-func (m Money) IsLessThan(other Money) (bool, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return false, err
-	}
-	return m.amount < other.amount, nil
-}
-
-// IsGreaterThan performs a safe greater-than comparison between two Money values.
-// Returns an error if the currencies don't match.
-func (m Money) IsGreaterThan(other Money) (bool, error) {
-	if err := m.assertSameCurrency(other); err != nil {
-		return false, err
-	}
-	return m.amount > other.amount, nil
+	return m.currency == other.currency && m.amount == other.amount
 }
 
 // Add performs overflow-safe addition of two Money values.
