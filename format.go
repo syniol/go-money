@@ -109,7 +109,10 @@ func (m Money) LocalisedString(tag language.Tag) string {
 	}
 	sampleTemplate := p.Sprint(currency.NarrowSymbol(cur.Amount(sampleAmount)))
 	samplePlaceholder := p.Sprintf("%.*f", m.currency.Decimals, sampleAmount)
-	if strings.Contains(sampleTemplate, samplePlaceholder) {
+	// Only substitute when the placeholder appears exactly once. A second
+	// occurrence would mean the placeholder collides with a literal in the
+	// CLDR template and the substitution would silently mangle the output.
+	if strings.Count(sampleTemplate, samplePlaceholder) == 1 {
 		return strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
 	}
 	return m.currency.Symbol + numberStr
