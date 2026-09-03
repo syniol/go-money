@@ -65,6 +65,12 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 	if intPart != "" && intPart != "-" {
 		parsedInt, err := strconv.ParseInt(intPart, 10, 64)
 		if err != nil {
+			// ParseInt already validated that digits are ASCII (we did that
+			// above); the only remaining failure is int64 overflow, which is
+			// an amount problem, not a format problem.
+			if numErr, ok := err.(*strconv.NumError); ok && numErr.Err == strconv.ErrRange {
+				return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrAmountTooLarge}
+			}
 			return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrInvalidFormat}
 		}
 		multiplier := getPow10(cfg.Decimals)
