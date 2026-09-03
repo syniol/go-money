@@ -2,8 +2,6 @@ package money
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 )
 
 // MarshalJSON emits {"amount":"<decimal>","currency":"<ISO>"} so JavaScript
@@ -11,7 +9,7 @@ import (
 // The output is assembled by append to keep the encoding reflection-free.
 func (m Money) MarshalJSON() ([]byte, error) {
 	if m.currency == nil {
-		return nil, errors.New("cannot marshal money without currency configuration")
+		return nil, &MoneyError{Op: "MarshalJSON", Err: ErrInvalidCurrency}
 	}
 	amount := m.AsDecimalString()
 	iso := m.currency.ISOCode
@@ -32,14 +30,14 @@ func (m *Money) UnmarshalJSON(data []byte) error {
 		Currency string `json:"currency"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return fmt.Errorf("failed to unmarshal money JSON: %w", err)
+		return &MoneyError{Op: "UnmarshalJSON", Err: ErrMalformedInput}
 	}
 	if aux.Amount == "" || aux.Currency == "" {
-		return errors.New("money JSON must contain both amount and currency fields")
+		return &MoneyError{Op: "UnmarshalJSON", Amount: aux.Amount, Currency: aux.Currency, Err: ErrEmptyInput}
 	}
 	v, err := NewFromString(aux.Amount, aux.Currency)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal money: %w", err)
+		return err
 	}
 	*m = v
 	return nil
