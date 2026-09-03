@@ -37,6 +37,11 @@ jobs:
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
 
+    - name: Enforce coverage floor
+      run: |
+        pct=$(go tool cover -func=coverage.out | awk '/^total:/ {print $3}' | tr -d '%')
+        awk -v p="$pct" 'BEGIN { if (p+0 < 80.0) { printf "coverage %.1f%% is below 80%% floor\n", p; exit 1 } else { printf "coverage %.1f%% meets 80%% floor\n", p } }'
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
