@@ -801,3 +801,10 @@ func TestNewFromString_OverflowingIntegerPart(t *testing.T) {
 		t.Errorf("err = %v, want ErrAmountTooLarge", err)
 	}
 }
+
+func TestNewFromString_WhitespaceOnly(t *testing.T) {
+	_, err := NewFromString("   ", "USD")
+	if !errors.Is(err, ErrEmptyInput) {
+		t.Errorf("err = %v, want ErrEmptyInput", err)
+	}
+}

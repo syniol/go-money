@@ -28,8 +28,13 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 	}
 
 	value = strings.TrimSpace(value)
+	if value == "" {
+		// An all-whitespace input became empty after trimming; classify it
+		// as empty rather than as a bad format.
+		return Money{}, &MoneyError{Op: "NewFromString", Currency: currencyCode, Err: ErrEmptyInput}
+	}
 	switch value {
-	case "", ".", "-", "-.":
+	case ".", "-", "-.":
 		return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrInvalidFormat}
 	}
 
