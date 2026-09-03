@@ -112,5 +112,5 @@ func (m Money) Equal(other Money) bool {
 	if m.currency == nil || other.currency == nil {
 		return false
 	}
-	return m.currency == other.currency && m.amount == other.amount
+	return m.currency.ISOCode == other.currency.ISOCode && m.amount == other.amount
 }

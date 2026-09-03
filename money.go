@@ -74,10 +74,16 @@ func (m Money) IsPositive() bool { return m.amount > 0 }
 // IsNegative reports whether the amount is strictly less than zero.
 func (m Money) IsNegative() bool { return m.amount < 0 }
 
-// assertSameCurrency compares by pointer identity because every Currency is
-// interned in the package-level currencyConfig map at init time.
+// assertSameCurrency compares by ISOCode rather than pointer identity so that
+// a test double or a caller who legitimately constructs a *Currency outside
+// the package-level currencyConfig map is not treated as a mismatch. Pointer
+// identity would be faster but depends on developer discipline that the
+// exported Currency type cannot enforce.
 func (m Money) assertSameCurrency(other Money) error {
-	if m.currency == nil || other.currency == nil || m.currency != other.currency {
+	if m.currency == nil || other.currency == nil {
+		return ErrCurrencyMismatch
+	}
+	if m.currency.ISOCode != other.currency.ISOCode {
 		return ErrCurrencyMismatch
 	}
 	return nil
