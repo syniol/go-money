@@ -62,75 +62,19 @@ func ExampleFromDecimal() {
 	// $10.51
 }
 
-func ExampleMoney_IsEqual() {
-	moneyExample, err := money.New(8881, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
+func ExampleMoney_Equal() {
+	moneyExample := money.MustNew(8881, "GBP")
+	moneyNotEqual := money.MustNew(8882, "GBP")
+	moneyDifferentCurrency := money.MustNew(8881, "USD")
 
-	moneyNotEqual, err := money.New(8882, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(moneyExample.IsEqual(moneyExample))
-	fmt.Println(moneyExample.IsEqual(moneyNotEqual))
+	fmt.Println(moneyExample.Equal(moneyExample))
+	fmt.Println(moneyExample.Equal(moneyNotEqual))
+	fmt.Println(moneyExample.Equal(moneyDifferentCurrency))
 
 	// Output:
-	// true <nil>
-	// false <nil>
-}
-
-func ExampleMoney_IsLessThan() {
-	moneyExample, err := money.New(8881, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	moneyGreater, err := money.New(8882, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	moneyLess, err := money.New(8880, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(moneyExample.IsLessThan(moneyExample))
-	fmt.Println(moneyExample.IsLessThan(moneyGreater))
-	fmt.Println(moneyExample.IsLessThan(moneyLess))
-
-	// Output:
-	// false <nil>
-	// true <nil>
-	// false <nil>
-}
-
-func ExampleMoney_IsGreaterThan() {
-	moneyExample, err := money.New(8881, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	moneyGreater, err := money.New(8882, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	moneyLess, err := money.New(8880, "GBP")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(moneyExample.IsGreaterThan(moneyExample))
-	fmt.Println(moneyExample.IsGreaterThan(moneyGreater))
-	fmt.Println(moneyExample.IsGreaterThan(moneyLess))
-
-	// Output:
-	// false <nil>
-	// false <nil>
-	// true <nil>
+	// true
+	// false
+	// false
 }
 
 func ExampleMoney_Compare() {
