@@ -205,12 +205,13 @@ func ExampleMoney_IsNegative() {
 func ExampleMoney_LocalisedString() {
 	m := money.MustNew(123456, "USD") // $1,234.56
 
-	// After our sanitization in money.go, this will consistently
-	// return the symbol flush against the digits.
+	// LocalisedString preserves whatever CLDR emits for the locale, including
+	// non-breaking spaces used as thousands separators in French, Russian and
+	// Swedish. Callers that want ASCII-only output can post-process.
 	fmt.Println(m.LocalisedString(language.AmericanEnglish))
 
 	// Output:
-	// $1,234.56
+	// $ 1,234.56
 }
 
 func ExampleMoney_MarshalJSON() {

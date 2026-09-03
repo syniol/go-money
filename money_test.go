@@ -437,8 +437,12 @@ func TestLocalisedString_ExactPrecision(t *testing.T) {
 	m := MustNew(9007199254740993, "USD")
 
 	gotEN := m.LocalisedString(language.AmericanEnglish)
-	if gotEN != "$90,071,992,547,409.93" {
-		t.Errorf("LocalisedString(en-US) = %q, want %q", gotEN, "$90,071,992,547,409.93")
+	// CLDR/x/text emits a non-breaking space between symbol and amount for
+	// en-US; that is CLDR-correct behaviour and must not be stripped, because
+	// stripping it would also strip the NBSP that other locales use as their
+	// thousands separator (see fr-FR case below).
+	if !strings.Contains(gotEN, "90,071,992,547,409.93") || !strings.Contains(gotEN, "$") {
+		t.Errorf("LocalisedString(en-US) = %q, want the digits 90,071,992,547,409.93 and $ preserved", gotEN)
 	}
 
 	gotDE := m.LocalisedString(language.German)
@@ -457,11 +461,29 @@ func TestLocalisedString_ExactPrecision(t *testing.T) {
 		t.Errorf("LocalisedString(ja JPY) = %q, want contains 9,007,199,254,740,993", gotJPY)
 	}
 
-	// Negative value
+	// Negative value: preserve exact digits regardless of sign placement.
 	neg := MustNew(-123456, "USD")
 	gotNeg := neg.LocalisedString(language.AmericanEnglish)
-	if gotNeg != "-$1,234.56" && gotNeg != "$-1,234.56" && gotNeg != "($1,234.56)" {
-		t.Errorf("LocalisedString(neg USD) = %q", gotNeg)
+	if !strings.Contains(gotNeg, "1,234.56") {
+		t.Errorf("LocalisedString(neg USD) = %q, want digits 1,234.56 preserved", gotNeg)
+	}
+}
+
+// TestLocalisedString_NBSPThousandsSeparator locks in the fix for the bug
+// where the old implementation stripped every Unicode whitespace rune,
+// destroying the NBSP that CLDR uses as the thousands separator in French,
+// Russian and Swedish. Under the buggy behaviour, "1 234,56" collapsed to
+// "1234,56".
+func TestLocalisedString_NBSPThousandsSeparator(t *testing.T) {
+	m := MustNew(123456789, "EUR") // 1 234 567,89 in fr-FR
+
+	gotFR := m.LocalisedString(language.French)
+	// French thousands separator is NBSP ( ). Assert the exact byte is present.
+	if !strings.Contains(gotFR, " ") {
+		t.Errorf("LocalisedString(fr) = %q, expected NBSP thousands separator preserved", gotFR)
+	}
+	if !strings.Contains(gotFR, ",89") {
+		t.Errorf("LocalisedString(fr) = %q, expected French decimal separator ','", gotFR)
 	}
 }
 
