@@ -53,3 +53,22 @@ func validateScale(c *Currency) error {
 	}
 	return nil
 }
+
+// PluralMajorUnit returns the singular or plural name of the currency's major
+// unit for the given quantity (e.g. "dollar" for 1, "dollars" for 2, "0" or
+// negative). English rules only; callers needing CLDR plural categories
+// should format with golang.org/x/text/message instead.
+func (c *Currency) PluralMajorUnit(qty int64) string {
+	if qty == 1 || qty == -1 {
+		return c.MajorSingle
+	}
+	return c.MajorPlural
+}
+
+// PluralMinorUnit is the minor-unit counterpart of PluralMajorUnit.
+func (c *Currency) PluralMinorUnit(qty int64) string {
+	if qty == 1 || qty == -1 {
+		return c.MinorSingle
+	}
+	return c.MinorPlural
+}

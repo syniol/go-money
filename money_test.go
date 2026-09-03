@@ -744,3 +744,22 @@ func BenchmarkUnmarshalJSON(b *testing.B) {
 		_ = m.UnmarshalJSON(data)
 	}
 }
+
+func TestCurrency_PluralUnit(t *testing.T) {
+	usd := currencyConfig["USD"]
+	if got := usd.PluralMajorUnit(1); got != usd.MajorSingle {
+		t.Errorf("PluralMajorUnit(1) = %q, want %q", got, usd.MajorSingle)
+	}
+	if got := usd.PluralMajorUnit(2); got != usd.MajorPlural {
+		t.Errorf("PluralMajorUnit(2) = %q, want %q", got, usd.MajorPlural)
+	}
+	if got := usd.PluralMajorUnit(0); got != usd.MajorPlural {
+		t.Errorf("PluralMajorUnit(0) = %q, want %q", got, usd.MajorPlural)
+	}
+	if got := usd.PluralMinorUnit(-1); got != usd.MinorSingle {
+		t.Errorf("PluralMinorUnit(-1) = %q, want %q", got, usd.MinorSingle)
+	}
+	if got := usd.PluralMinorUnit(5); got != usd.MinorPlural {
+		t.Errorf("PluralMinorUnit(5) = %q, want %q", got, usd.MinorPlural)
+	}
+}
