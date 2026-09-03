@@ -16,8 +16,6 @@ package money
 
 //go:generate go run cmd/gen_currencies/main.go
 
-import "fmt"
-
 // Money is an immutable monetary amount in a specific currency.
 //
 // Amounts are stored in the currency's minor units so all arithmetic stays
@@ -49,7 +47,9 @@ func New(minorAmount int64, currencyCode string) (Money, error) {
 func MustNew(minorAmount int64, currencyCode string) Money {
 	m, err := New(minorAmount, currencyCode)
 	if err != nil {
-		panic(fmt.Sprintf("money.MustNew: %v", err))
+		// The underlying MoneyError already carries the "money.New(...)"
+		// prefix; do not add a second "money.MustNew:" on top.
+		panic(err)
 	}
 	return m
 }
