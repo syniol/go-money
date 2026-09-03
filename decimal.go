@@ -36,7 +36,11 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	}
 	multiplier := float64(getPow10(cfg.Decimals))
 	scaledValue := value * multiplier
-	if math.IsNaN(scaledValue) || math.IsInf(scaledValue, 0) || scaledValue > float64(math.MaxInt64) || scaledValue < float64(math.MinInt64) {
+	// float64(math.MaxInt64) rounds up to 9.223372036854776e18 (one past
+	// MaxInt64) because MaxInt64 needs 63 bits and float64 only has 52 bits
+	// of mantissa. Use >= so scaledValue == float64(math.MaxInt64) is
+	// rejected rather than fed to a spec-undefined int64 conversion.
+	if math.IsNaN(scaledValue) || math.IsInf(scaledValue, 0) || scaledValue >= float64(math.MaxInt64) || scaledValue <= float64(math.MinInt64) {
 		return Money{}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrAmountTooLarge}
 	}
 	var rounded int64

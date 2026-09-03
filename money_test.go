@@ -763,3 +763,12 @@ func TestCurrency_PluralUnit(t *testing.T) {
 		t.Errorf("PluralMinorUnit(5) = %q, want %q", got, usd.MinorPlural)
 	}
 }
+
+func TestFromDecimal_BoundaryExactMax(t *testing.T) {
+	// float64(math.MaxInt64) rounds up past MaxInt64. Feeding that back into
+	// int64() is implementation-defined by the Go spec. The bounds check
+	// must reject rather than accept.
+	if _, err := FromDecimal(float64(math.MaxInt64)/100.0*100.0, "JPY", RoundHalfToEven); !errors.Is(err, ErrAmountTooLarge) {
+		t.Errorf("FromDecimal at MaxInt64 boundary err = %v, want ErrAmountTooLarge", err)
+	}
+}
