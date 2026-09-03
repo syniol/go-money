@@ -15,7 +15,7 @@ Most libraries fail by treating money as a generic data structure or, worse, a f
 
 1.  **Zero Floating Point:** Absolute protection against IEEE-754 rounding errors. Money is stored as an `int64` representing the **minor unit** (e.g., $1.00 USD is `100`).
 2.  **Hardened Arithmetic:** Every addition, subtraction, and multiplication is guarded against silent integer overflows.
-3.  **Stack-Only Allocation:** The `Money` struct is designed to stay on the stack, bypassing Garbage Collector (GC) pressure to provide predictable latency in high-throughput ledger environments.
+3.  **Low GC Pressure:** The `Money` struct is a 16-byte value (int64 amount plus a shared `*Currency` pointer). Copies stay on the stack; the referenced `Currency` metadata is interned once at init and reused, so arithmetic and comparisons do not allocate.
 
 ---
 
