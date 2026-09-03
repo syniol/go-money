@@ -898,21 +898,24 @@ func (m Money) LocalisedString(tag language.Tag) string {
 	return m.currency.Symbol + numberStr
 }
 
-// MarshalJSON implements json.Marshaler interface with precision preservation.
-// Returns JSON in the format: {"amount":"10.50","currency":"USD"}
-//
-// This format prevents client-side floating-point precision loss that would
-// occur with numeric JSON representation.
+// MarshalJSON emits {"amount":"<decimal>","currency":"<ISO>"} so JavaScript
+// clients cannot silently lose precision by parsing the amount as a float.
+// The output is assembled by append to keep the encoding reflection-free;
+// AsDecimalString and the ISO code are both ASCII-safe so no escaping is
+// required.
 func (m Money) MarshalJSON() ([]byte, error) {
 	if m.currency == nil {
 		return nil, errors.New("cannot marshal money without currency configuration")
 	}
-
-	amountStr := m.AsDecimalString()
-
-	// Manual JSON construction for performance (avoids reflection)
-	return []byte(fmt.Sprintf(`{"amount":"%s","currency":"%s"}`,
-		amountStr, m.currency.ISOCode)), nil
+	amount := m.AsDecimalString()
+	iso := m.currency.ISOCode
+	buf := make([]byte, 0, len(amount)+len(iso)+26)
+	buf = append(buf, `{"amount":"`...)
+	buf = append(buf, amount...)
+	buf = append(buf, `","currency":"`...)
+	buf = append(buf, iso...)
+	buf = append(buf, `"}`...)
+	return buf, nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface.
