@@ -16,7 +16,7 @@ var (
 	ErrInputTooLong      = errors.New("input string exceeds maximum allowed length")
 	ErrEmptyInput        = errors.New("input string cannot be empty")
 	ErrMalformedInput    = errors.New("input contains invalid characters or structure")
-	ErrInvalidSplitCount = errors.New("split count must be between 1 and MaxSplitParts")
+	ErrInvalidSplitCount = fmt.Errorf("split count must be between 1 and %d", MaxSplitParts)
 )
 
 // MoneyError wraps a sentinel error with contextual information about the
