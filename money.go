@@ -986,12 +986,11 @@ func validateScale(c *Currency) error {
 }
 
 // assertSameCurrency validates that two Money values have the same currency.
-// This is a critical safety check for all arithmetic and comparison operations.
+// Comparison is by pointer identity because every Currency value is interned
+// in the package-level currencyConfig map at init time; this saves a string
+// comparison on every arithmetic and comparison operation.
 func (m Money) assertSameCurrency(other Money) error {
-	if m.currency == nil || other.currency == nil {
-		return ErrCurrencyMismatch
-	}
-	if m.currency.ISOCode != other.currency.ISOCode {
+	if m.currency == nil || other.currency == nil || m.currency != other.currency {
 		return ErrCurrencyMismatch
 	}
 	return nil
