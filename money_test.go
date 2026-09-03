@@ -578,6 +578,100 @@ func TestGetPow10_Panic(t *testing.T) {
 	_ = getPow10(99)
 }
 
+func TestAdd_Overflow(t *testing.T) {
+	maxUSD := MustNew(math.MaxInt64, "USD")
+	one := MustNew(1, "USD")
+	if _, err := maxUSD.Add(one); !errors.Is(err, ErrOverflow) {
+		t.Errorf("MaxInt64 + 1 error = %v, want ErrOverflow", err)
+	}
+	minUSD := MustNew(math.MinInt64, "USD")
+	negOne := MustNew(-1, "USD")
+	if _, err := minUSD.Add(negOne); !errors.Is(err, ErrOverflow) {
+		t.Errorf("MinInt64 + -1 error = %v, want ErrOverflow", err)
+	}
+}
+
+func TestSub_Overflow(t *testing.T) {
+	minUSD := MustNew(math.MinInt64, "USD")
+	one := MustNew(1, "USD")
+	if _, err := minUSD.Sub(one); !errors.Is(err, ErrOverflow) {
+		t.Errorf("MinInt64 - 1 error = %v, want ErrOverflow", err)
+	}
+	maxUSD := MustNew(math.MaxInt64, "USD")
+	negOne := MustNew(-1, "USD")
+	if _, err := maxUSD.Sub(negOne); !errors.Is(err, ErrOverflow) {
+		t.Errorf("MaxInt64 - -1 error = %v, want ErrOverflow", err)
+	}
+}
+
+func TestMul_Overflow(t *testing.T) {
+	half := MustNew(math.MaxInt64/2+1, "USD")
+	if _, err := half.Mul(2); !errors.Is(err, ErrOverflow) {
+		t.Errorf("(MaxInt64/2+1) * 2 error = %v, want ErrOverflow", err)
+	}
+	minUSD := MustNew(math.MinInt64, "USD")
+	if _, err := minUSD.Mul(-1); !errors.Is(err, ErrOverflow) {
+		t.Errorf("MinInt64 * -1 error = %v, want ErrOverflow", err)
+	}
+}
+
+func TestArithmetic_CurrencyMismatch(t *testing.T) {
+	usd := MustNew(100, "USD")
+	eur := MustNew(100, "EUR")
+	if _, err := usd.Add(eur); !errors.Is(err, ErrCurrencyMismatch) {
+		t.Errorf("Add across currencies error = %v, want ErrCurrencyMismatch", err)
+	}
+	if _, err := usd.Sub(eur); !errors.Is(err, ErrCurrencyMismatch) {
+		t.Errorf("Sub across currencies error = %v, want ErrCurrencyMismatch", err)
+	}
+	if _, err := usd.Compare(eur); !errors.Is(err, ErrCurrencyMismatch) {
+		t.Errorf("Compare across currencies error = %v, want ErrCurrencyMismatch", err)
+	}
+	if usd.Equal(eur) {
+		t.Errorf("Equal across currencies returned true")
+	}
+}
+
+func TestSplit_One(t *testing.T) {
+	m := MustNew(1234, "USD")
+	parts, err := m.Split(1)
+	if err != nil {
+		t.Fatalf("Split(1) failed: %v", err)
+	}
+	if len(parts) != 1 || parts[0].Minor() != 1234 {
+		t.Errorf("Split(1) = %v, want a single unchanged part", parts)
+	}
+}
+
+func TestUnmarshalJSON_Errors(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+	}{
+		{"empty object", `{}`},
+		{"missing amount", `{"currency":"USD"}`},
+		{"missing currency", `{"amount":"10.50"}`},
+		{"invalid currency", `{"amount":"10.50","currency":"XYZ"}`},
+		{"invalid amount", `{"amount":"not-a-number","currency":"USD"}`},
+		{"malformed json", `{"amount":"10.50",`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var m Money
+			if err := m.UnmarshalJSON([]byte(tt.data)); err == nil {
+				t.Errorf("UnmarshalJSON(%q) = nil, want error", tt.data)
+			}
+		})
+	}
+}
+
+func TestMarshalJSON_ZeroValue(t *testing.T) {
+	var m Money
+	if _, err := m.MarshalJSON(); err == nil {
+		t.Error("MarshalJSON on zero-value Money returned no error")
+	}
+}
+
 func BenchmarkNewFromString(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
