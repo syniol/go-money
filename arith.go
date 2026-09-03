@@ -40,22 +40,22 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 	}
 	if multiplier > 0 {
 		if m.amount > 0 && m.amount > math.MaxInt64/multiplier {
-			return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+			return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Mul", Err: ErrOverflow}
 		}
 		if m.amount < 0 && m.amount < math.MinInt64/multiplier {
-			return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+			return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Mul", Err: ErrOverflow}
 		}
 	} else {
 		if multiplier == -1 {
 			if m.amount == math.MinInt64 {
-				return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+				return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Mul", Err: ErrOverflow}
 			}
 		} else {
 			if m.amount > 0 && m.amount > math.MinInt64/multiplier {
-				return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+				return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Mul", Err: ErrOverflow}
 			}
 			if m.amount < 0 && m.amount < math.MaxInt64/multiplier {
-				return Money{}, &MoneyError{Op: "Mul", Err: ErrOverflow}
+				return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Mul", Err: ErrOverflow}
 			}
 		}
 	}
