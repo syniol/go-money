@@ -28,7 +28,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"golang.org/x/text/currency"
 	"golang.org/x/text/language"
@@ -893,21 +892,10 @@ func (m Money) LocalisedString(tag language.Tag) string {
 	sampleTemplate := p.Sprint(currency.NarrowSymbol(cur.Amount(sampleAmount)))
 	samplePlaceholder := p.Sprintf("%.*f", m.currency.Decimals, sampleAmount)
 
-	var raw string
 	if strings.Contains(sampleTemplate, samplePlaceholder) {
-		raw = strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
-	} else {
-		// Fallback if template substitution fails
-		raw = m.currency.Symbol + numberStr
+		return strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
 	}
-
-	// Remove Unicode whitespace while preserving currency symbols and digits
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, raw)
+	return m.currency.Symbol + numberStr
 }
 
 // MarshalJSON implements json.Marshaler interface with precision preservation.
