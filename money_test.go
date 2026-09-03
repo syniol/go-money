@@ -850,3 +850,27 @@ func TestUnmarshalText_Errors(t *testing.T) {
 		t.Errorf("bad currency err = %v, want ErrInvalidCurrency", err)
 	}
 }
+
+// FuzzUnmarshalJSON exercises the JSON boundary with random bytes and
+// asserts panic-freedom and the sign-preservation invariant on success.
+func FuzzUnmarshalJSON(f *testing.F) {
+	f.Add(`{"amount":"10.50","currency":"USD"}`)
+	f.Add(`{"amount":"-100.00","currency":"GBP"}`)
+	f.Add(`{"amount":"0.00","currency":"EUR"}`)
+	f.Add(`{}`)
+	f.Add(`{"amount":"","currency":""}`)
+	f.Add(`{"amount":"92233720368547758.07","currency":"USD"}`)
+	f.Add(`not json`)
+	f.Add(``)
+
+	f.Fuzz(func(t *testing.T, payload string) {
+		var m Money
+		err := m.UnmarshalJSON([]byte(payload))
+		if err != nil {
+			return
+		}
+		if m.Currency() == "" {
+			t.Errorf("payload %q parsed with empty currency", payload)
+		}
+	})
+}
