@@ -107,8 +107,13 @@ func (m Money) Compare(other Money) (int, error) {
 
 // Equal reports whether m and other have the same currency and amount. It
 // returns false rather than an error on mismatch, matching the shape of
-// time.Time.Equal so it can be used ergonomically in conditionals.
+// time.Time.Equal so it can be used ergonomically in conditionals. Two
+// zero-value Money values are equal to each other, again matching
+// time.Time.Equal.
 func (m Money) Equal(other Money) bool {
+	if m.currency == nil && other.currency == nil {
+		return m.amount == other.amount
+	}
 	if m.currency == nil || other.currency == nil {
 		return false
 	}

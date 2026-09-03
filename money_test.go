@@ -808,3 +808,14 @@ func TestNewFromString_WhitespaceOnly(t *testing.T) {
 		t.Errorf("err = %v, want ErrEmptyInput", err)
 	}
 }
+
+func TestEqual_ZeroValues(t *testing.T) {
+	var a, b Money
+	if !a.Equal(b) {
+		t.Error("two zero-value Moneys should be equal, matching time.Time.Equal")
+	}
+	usd := MustNew(0, "USD")
+	if a.Equal(usd) || usd.Equal(a) {
+		t.Error("zero-value Money should not equal a real currency-carrying zero")
+	}
+}
