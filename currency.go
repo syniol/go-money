@@ -31,7 +31,25 @@ const (
 
 	// MaxSplitParts caps Split fan-out to prevent memory exhaustion.
 	MaxSplitParts = 10000
+
+	// ISONumUnknown is the sentinel written to Currency.ISONum when the
+	// upstream ISO 4217 source has no numeric code for that currency. Valid
+	// ISO 4217 numeric codes are always positive (1..999), so a negative
+	// value is unambiguously "unknown".
+	ISONumUnknown = -1
+
+	// NumToBasicUnknown is the sentinel for Currency.NumToBasic when the
+	// upstream ISO source has no conversion factor.
+	NumToBasicUnknown = -1
 )
+
+// HasISONum reports whether Currency.ISONum holds a real ISO 4217 numeric
+// code rather than the ISONumUnknown sentinel.
+func (c *Currency) HasISONum() bool { return c.ISONum != ISONumUnknown }
+
+// HasNumToBasic reports whether Currency.NumToBasic holds a real conversion
+// factor rather than the NumToBasicUnknown sentinel.
+func (c *Currency) HasNumToBasic() bool { return c.NumToBasic != NumToBasicUnknown }
 
 var pow10 = [...]int64{
 	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000,

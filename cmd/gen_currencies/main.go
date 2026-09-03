@@ -38,14 +38,14 @@ var currencyConfig = map[string]*Currency{
 		Demonym:      {{ printf "%q" .Demonym }},
 		MajorSingle:  {{ printf "%q" .MajorSingle }},
 		MajorPlural:  {{ printf "%q" .MajorPlural }},
-		ISONum:       {{ if .ISONum }}{{ .ISONum }}{{ else }}0{{ end }},
+		ISONum:       {{ if .ISONum }}{{ .ISONum }}{{ else }}ISONumUnknown{{ end }},
 		Symbol:       {{ printf "%q" .Symbol }},
 		SymbolNative: {{ printf "%q" .SymbolNative }},
 		MinorSingle:  {{ printf "%q" .MinorSingle }},
 		MinorPlural:  {{ printf "%q" .MinorPlural }},
 		ISODigits:    {{ .ISODigits }},
 		Decimals:     {{ .Decimals }},
-		NumToBasic:   {{ if .NumToBasic }}{{ .NumToBasic }}{{ else }}0{{ end }},
+		NumToBasic:   {{ if .NumToBasic }}{{ .NumToBasic }}{{ else }}NumToBasicUnknown{{ end }},
 	},
 {{- end }}
 }

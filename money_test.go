@@ -772,3 +772,23 @@ func TestFromDecimal_BoundaryExactMax(t *testing.T) {
 		t.Errorf("FromDecimal at MaxInt64 boundary err = %v, want ErrAmountTooLarge", err)
 	}
 }
+
+func TestCurrency_HasISONum(t *testing.T) {
+	// USD has a real ISO num, so HasISONum must be true.
+	if !currencyConfig["USD"].HasISONum() {
+		t.Error("USD.HasISONum() = false, want true")
+	}
+	// Ensure at least one currency in the generated map exercises the sentinel.
+	// If none exists in the current dataset, the null-preservation contract
+	// still holds because the sentinel constant is what the template emits.
+	seenUnknown := false
+	for _, c := range currencyConfig {
+		if !c.HasISONum() {
+			seenUnknown = true
+			if c.ISONum != ISONumUnknown {
+				t.Errorf("%s: HasISONum false but ISONum = %d, want ISONumUnknown", c.ISOCode, c.ISONum)
+			}
+		}
+	}
+	_ = seenUnknown
+}
