@@ -645,21 +645,23 @@ func TestSplit_One(t *testing.T) {
 
 func TestUnmarshalJSON_Errors(t *testing.T) {
 	tests := []struct {
-		name string
-		data string
+		name    string
+		data    string
+		wantErr error
 	}{
-		{"empty object", `{}`},
-		{"missing amount", `{"currency":"USD"}`},
-		{"missing currency", `{"amount":"10.50"}`},
-		{"invalid currency", `{"amount":"10.50","currency":"XYZ"}`},
-		{"invalid amount", `{"amount":"not-a-number","currency":"USD"}`},
-		{"malformed json", `{"amount":"10.50",`},
+		{"empty object", `{}`, ErrEmptyInput},
+		{"missing amount", `{"currency":"USD"}`, ErrEmptyInput},
+		{"missing currency", `{"amount":"10.50"}`, ErrEmptyInput},
+		{"invalid currency", `{"amount":"10.50","currency":"XYZ"}`, ErrInvalidCurrency},
+		{"invalid amount", `{"amount":"not-a-number","currency":"USD"}`, ErrMalformedInput},
+		{"malformed json", `{"amount":"10.50",`, ErrMalformedInput},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var m Money
-			if err := m.UnmarshalJSON([]byte(tt.data)); err == nil {
-				t.Errorf("UnmarshalJSON(%q) = nil, want error", tt.data)
+			err := m.UnmarshalJSON([]byte(tt.data))
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("UnmarshalJSON(%q) err = %v, want %v", tt.data, err, tt.wantErr)
 			}
 		})
 	}
