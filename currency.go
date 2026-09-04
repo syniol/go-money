@@ -55,8 +55,10 @@ const (
 	ISONumUnknown = -1
 
 	// NumToBasicUnknown is the sentinel for Currency.NumToBasic when the
-	// upstream ISO source has no conversion factor.
-	NumToBasicUnknown = -1
+	// upstream ISO source has no conversion factor. Distinct value from
+	// ISONumUnknown so accidental cross-comparison fails loudly rather
+	// than passing silently.
+	NumToBasicUnknown = -2
 )
 
 // HasISONum reports whether Currency.ISONum holds a real ISO 4217 numeric
