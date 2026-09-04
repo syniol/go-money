@@ -16,19 +16,28 @@ import "fmt"
 // The fields are unexported so a downstream caller cannot mutate the shared
 // map values by accident. Read state via the accessor methods below.
 type Currency struct {
-	isoCode      string
+	// Hot fields first, in access-frequency order. isoCode, decimals and
+	// symbol are read on nearly every arithmetic, comparison or format
+	// operation. Placing them at the head of the struct keeps them within
+	// the same cache line on 64-bit CPUs.
+	isoCode  string
+	symbol   string
+	decimals int
+
+	// Cold ISO metadata.
+	isoNum     int
+	isoDigits  int
+	numToBasic int
+
+	// Cold display metadata used only by callers formatting locale-aware
+	// strings outside the library's own hot paths.
 	name         string
 	demonym      string
+	symbolNative string
 	majorSingle  string
 	majorPlural  string
-	isoNum       int
-	symbol       string
-	symbolNative string
 	minorSingle  string
 	minorPlural  string
-	isoDigits    int
-	decimals     int
-	numToBasic   int
 }
 
 // ISOCode returns the ISO 4217 three-letter code (e.g. "USD").
