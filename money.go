@@ -36,9 +36,6 @@ func New(minorAmount int64, currencyCode string) (Money, error) {
 	if !ok {
 		return Money{}, &MoneyError{Op: "New", Currency: currencyCode, Err: ErrInvalidCurrency}
 	}
-	if err := validateScale(cfg); err != nil {
-		return Money{}, &MoneyError{Op: "New", Currency: currencyCode, Err: err}
-	}
 	return Money{amount: minorAmount, currency: cfg}, nil
 }
 
