@@ -1,0 +1,116 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  verify-tag:
+    name: Verify tag is on main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag is reachable from origin/main
+        run: |
+          git branch -r --contains ${{ github.ref_name }} | grep -E "origin/main" || {
+            echo "::error::Tag ${{ github.ref_name }} must be pushed from the main branch."
+            exit 1
+          }
+
+  test:
+    name: Run tests
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.x
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test with race
+        run: go test -race ./...
+
+      - name: Verify go generate produces no drift
+        run: |
+          go generate ./...
+          if ! git diff --exit-code; then
+            echo "::error::Generated files are out of date; run 'go generate ./...' and commit before tagging."
+            exit 1
+          fi
+
+  sql-integration:
+    name: SQL integration
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.x
+
+      - name: Download deps
+        working-directory: sqltest
+        run: go mod download
+
+      - name: Run SQLite integration tests
+        working-directory: sqltest
+        run: go test -race ./...
+
+  publish-release:
+    name: Publish release and artefacts
+    needs: [test, sql-integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Source archive.
+      - name: Build source archive
+        run: |
+          git archive --format=tar.gz \
+            --prefix=go-money-${{ github.ref_name }}/ \
+            -o go-money-${{ github.ref_name }}.tar.gz HEAD
+
+      # 2. Checksum.
+      - name: Generate SHA-256 checksum
+        run: sha256sum go-money-${{ github.ref_name }}.tar.gz > go-money-${{ github.ref_name }}.tar.gz.sha256
+
+      # 3. SPDX SBOM.
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: 'spdx-json'
+          output-file: 'go-money-${{ github.ref_name }}.spdx.json'
+
+      # 4. Provenance attestation.
+      - name: Generate artefact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'go-money-${{ github.ref_name }}.tar.gz'
+
+      # 5. GitHub Release with auto-generated notes plus assets.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            go-money-${{ github.ref_name }}.tar.gz
+            go-money-${{ github.ref_name }}.tar.gz.sha256
+            go-money-${{ github.ref_name }}.spdx.json
+          generate_release_notes: true
+          draft: false
+          prerelease: false

@@ -7,6 +7,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Release automation via `.github/workflows/release.yml`: pushing a `vX.Y.Z` tag from `main` runs verification (vet, race tests, SQL integration, go-generate drift), builds a source archive with SHA-256 and SPDX SBOM, generates a GitHub build-provenance attestation, and publishes a GitHub Release with auto-generated notes.
+
 ### Changed
 - Community and documentation files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `BENCHMARK.md`) moved to `docs/`. GitHub Community Standards side-panel entries stay detected via `docs/`.
 - `iso-4217.json` moved into `cmd/gen_currencies/` and embedded at build time via `//go:embed`. The generator is now independent of the working directory it is invoked from.
