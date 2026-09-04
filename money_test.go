@@ -189,8 +189,8 @@ func FuzzNewFromString(f *testing.F) {
 	f.Add("10.50", "USD")
 	f.Add("-100.99", "GBP")
 	f.Add("0.00", "EUR")
-	f.Add("92233720368547758.07", "USD") // Boundary test (MaxInt64 for 2 decimals)
-	f.Add("92233720368547758.08", "USD") // Overflow boundary test
+	f.Add("92233720368547758.07", "USD")  // Boundary test (MaxInt64 for 2 decimals)
+	f.Add("92233720368547758.08", "USD")  // Overflow boundary test
 	f.Add("-92233720368547758.08", "USD") // MinInt64 boundary test
 	f.Add("-92233720368547758.09", "USD") // Underflow boundary test
 	f.Add("9999999999999999.99", "USD")
