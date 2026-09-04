@@ -14,9 +14,9 @@
 // hot financial paths because float64 cannot represent every decimal exactly.
 package money
 
-//go:generate go run cmd/gen_currencies/main.go
-
 import "sort"
+
+//go:generate go run cmd/gen_currencies/main.go
 
 // Money is an immutable monetary amount in a specific currency.
 //
