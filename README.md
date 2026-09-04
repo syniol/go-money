@@ -2,10 +2,12 @@
 
 Integer-backed monetary amounts for Go. `int64` minor units, overflow-safe arithmetic, fuzz-tested string parser, ISO 4217 metadata generated from the official source, JSON and text codecs, CLDR-aware localised display.
 
-[![CI](https://github.com/syniol/go-money/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/syniol/go-money/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/syniol/go-money.svg)](https://pkg.go.dev/github.com/syniol/go-money)
-[![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg)](https://opensource.org/license/bsd-3-clause)
-[![ISO 4217](https://img.shields.io/badge/ISO%204217-compliant-brightgreen.svg)](https://www.iso.org/iso-4217-currency-codes.html)
+<p align="center">
+  <a href="https://github.com/syniol/go-money/actions/workflows/ci.yml"><img src="https://github.com/syniol/go-money/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://pkg.go.dev/github.com/syniol/go-money"><img src="https://pkg.go.dev/badge/github.com/syniol/go-money.svg" alt="Go Reference"></a>
+  <a href="https://opensource.org/license/bsd-3-clause"><img src="https://img.shields.io/badge/License-BSD-blue.svg" alt="License: BSD"></a>
+  <a href="https://www.iso.org/iso-4217-currency-codes.html"><img src="https://img.shields.io/badge/ISO%204217-compliant-brightgreen.svg" alt="ISO 4217"></a>
+</p>
 
 ## When to use this
 
