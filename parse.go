@@ -93,10 +93,10 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 	}
 
 	if fracPart != "" {
-		parsedFrac, err := strconv.ParseInt(fracPart, 10, 64)
-		if err != nil {
-			return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrInvalidFormat}
-		}
+		// ParseInt cannot fail here: the loop above rejected any non-digit
+		// rune, and len(fracPart) <= cfg.Decimals <= MaxSafeDecimals = 12,
+		// which always fits in int64.
+		parsedFrac, _ := strconv.ParseInt(fracPart, 10, 64)
 		fracMultiplier := getPow10(cfg.Decimals - len(fracPart))
 		fractionalAmount := parsedFrac * fracMultiplier
 		if strings.HasPrefix(intPart, "-") {
