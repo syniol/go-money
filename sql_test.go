@@ -12,12 +12,12 @@ func TestValue_ProducesTextWireFormat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Value err = %v", err)
 	}
-	s, ok := v.(string)
+	b, ok := v.([]byte)
 	if !ok {
-		t.Fatalf("Value returned %T, want string", v)
+		t.Fatalf("Value returned %T, want []byte", v)
 	}
-	if s != "10.50 USD" {
-		t.Errorf("Value = %q, want %q", s, "10.50 USD")
+	if string(b) != "10.50 USD" {
+		t.Errorf("Value = %q, want %q", b, "10.50 USD")
 	}
 }
 
