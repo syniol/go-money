@@ -21,7 +21,7 @@ Pick something else if you need:
 - Arbitrary-precision decimals across the API today. See [`github.com/bojanz/currency`](https://github.com/bojanz/currency).
 - Amounts larger than `int64` can hold (some crypto). Track [issue #17](https://github.com/syniol/go-money/issues/17) for `BigMoney`.
 - Built-in currency conversion. Track [issue #18](https://github.com/syniol/go-money/issues/18).
-- SQL scanning. Track [issue #16](https://github.com/syniol/go-money/issues/16).
+- SQL scanning for numeric-typed columns. `TEXT`/`VARCHAR` is supported natively via `Money.Value` and `Money.Scan`; a pgx `NUMERIC` codec is a follow-up.
 
 ## Feature comparison
 
@@ -32,7 +32,7 @@ Pick something else if you need:
 | String parser | fuzz-tested, zero-alloc | none (float only) | decimal-backed |
 | Currency mismatch guard | error | error | error |
 | Locale-aware display | CLDR via x/text | none | CLDR (native) |
-| `sql.Scanner`/`driver.Valuer` | tracked in #16 | no | yes |
+| `sql.Scanner`/`driver.Valuer` | yes (TEXT/VARCHAR) | no | yes |
 | FX conversion | tracked in #18 | single rate | no |
 | Fuzz tests | yes | no | some |
 | Big-integer amount | tracked in #17 | no | native |
@@ -92,6 +92,28 @@ txt, _ := m.MarshalText()
 
 fmt.Println(m, price, total, neg, abs, string(data), string(txt))
 ```
+
+## SQL columns
+
+`Money` satisfies `database/sql/driver.Valuer` and `sql.Scanner` for `TEXT` or `VARCHAR(24)` columns. `NullMoney` mirrors `sql.NullString` for nullable columns.
+
+```go
+// Write
+_, err := db.Exec(`INSERT INTO orders (id, total) VALUES ($1, $2)`, id, m)
+
+// Read
+var m money.Money
+err = db.QueryRow(`SELECT total FROM orders WHERE id = $1`, id).Scan(&m)
+
+// Nullable
+var nm money.NullMoney
+err = db.QueryRow(`SELECT refund FROM orders WHERE id = $1`, id).Scan(&nm)
+if nm.Valid {
+    // nm.Money is populated
+}
+```
+
+Wire format is `"<decimal> <ISO>"` (e.g. `"10.50 USD"`), the same as `MarshalText`, so a value stored via `database/sql` round-trips identically through JSON, YAML and TOML.
 
 ## Currency metadata
 
@@ -179,7 +201,6 @@ Currency metadata is generated from `iso-4217.json` by `cmd/gen_currencies`. Reg
 
 Adoption-driving items are tracked as issues; contributions welcome on any of these:
 
-- [#16](https://github.com/syniol/go-money/issues/16) `sql.Scanner` and `driver.Valuer` for `database/sql`
 - [#17](https://github.com/syniol/go-money/issues/17) `BigMoney` backed by `big.Int`
 - [#18](https://github.com/syniol/go-money/issues/18) FX `Rate` and `Money.Convert`
 - [#15](https://github.com/syniol/go-money/issues/15) `shopspring/decimal` interop under a sub-package

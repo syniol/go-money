@@ -299,3 +299,33 @@ func ExampleMoney_UnmarshalText() {
 	fmt.Println(m.Minor(), m.Currency())
 	// Output: 1599 GBP
 }
+
+func ExampleMoney_Value() {
+	m := money.MustNew(1050, "USD")
+	v, _ := m.Value()
+	fmt.Printf("%q\n", v)
+	// Output: "10.50 USD"
+}
+
+func ExampleMoney_Scan() {
+	var m money.Money
+	_ = m.Scan("15.99 GBP")
+	fmt.Println(m.Minor(), m.Currency())
+	// Output: 1599 GBP
+}
+
+func ExampleNullMoney() {
+	var nm money.NullMoney
+
+	// Scanning a NULL column yields Valid == false.
+	_ = nm.Scan(nil)
+	fmt.Println("null:", nm.Valid)
+
+	// Scanning a real amount yields Valid == true.
+	_ = nm.Scan("42.00 EUR")
+	fmt.Println("real:", nm.Valid, nm.Money.Minor(), nm.Money.Currency())
+
+	// Output:
+	// null: false
+	// real: true 4200 EUR
+}
