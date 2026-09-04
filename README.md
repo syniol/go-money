@@ -42,7 +42,7 @@ Pick something else if you need:
 
 ## Benchmarks
 
-Selected results on Apple M2, Go 1.24.7. Full table and methodology in [BENCHMARK.md](BENCHMARK.md).
+Selected results on Apple M2, Go 1.24.7. Full table and methodology in [docs/BENCHMARK.md](docs/BENCHMARK.md).
 
 | Operation | `go-money` | Rhymond | bojanz |
 |---|---:|---:|---:|
@@ -206,10 +206,10 @@ Every merge to `main` runs `go vet`, `staticcheck`, `govulncheck`, tests with ra
 ## Project files
 
 - [CHANGELOG.md](CHANGELOG.md) release history in Keep-a-Changelog format
-- [BENCHMARK.md](BENCHMARK.md) reproducible comparison against Rhymond, bojanz, leekchan
-- [SECURITY.md](SECURITY.md) private vulnerability reporting workflow
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) Contributor Covenant 2.1
-- [CONTRIBUTING.md](CONTRIBUTING.md) how to build, test and submit changes
+- [docs/BENCHMARK.md](docs/BENCHMARK.md) reproducible comparison against Rhymond, bojanz, leekchan
+- [docs/SECURITY.md](docs/SECURITY.md) private vulnerability reporting workflow
+- [docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md) Contributor Covenant 2.1
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) how to build, test and submit changes
 
 ## Data source
 
