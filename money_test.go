@@ -1053,7 +1053,7 @@ func TestFormat_Verbs(t *testing.T) {
 		{"%s", "$10.50"},
 		{"%v", "$10.50"},
 		{"%+v", "money.Money{amount:1050 currency:USD}"},
-		{"%#v", "money.Money{amount:1050 currency:USD}"},
+		{"%#v", "money.MustNew(1050, \"USD\")"},
 		{"%q", "\"$10.50\""},
 	}
 	for _, tt := range tests {
