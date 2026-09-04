@@ -1,4 +1,4 @@
-# go-money
+# go-money: floats lie.
 
 Integer-backed monetary amounts for Go. `int64` minor units, overflow-safe arithmetic, fuzz-tested string parser, ISO 4217 metadata generated from the official source, JSON and text codecs, CLDR-aware localised display.
 
