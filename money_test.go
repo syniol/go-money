@@ -1084,3 +1084,34 @@ func TestLocalisedString_ArabicLocaleNoCorruption(t *testing.T) {
 		t.Error("LocalisedString(ar) returned empty; separator sniff likely broke")
 	}
 }
+
+func TestGetCurrency(t *testing.T) {
+	usd, ok := GetCurrency("USD")
+	if !ok {
+		t.Fatal("GetCurrency(USD) not found")
+	}
+	if usd.ISOCode() != "USD" || usd.Symbol() != "$" || usd.Decimals() != 2 {
+		t.Errorf("USD accessors returned wrong values: %s %s %d", usd.ISOCode(), usd.Symbol(), usd.Decimals())
+	}
+	if _, ok := GetCurrency("ZZZ"); ok {
+		t.Error("GetCurrency(ZZZ) should not exist")
+	}
+}
+
+func TestCurrencies(t *testing.T) {
+	codes := Currencies()
+	if len(codes) == 0 {
+		t.Fatal("Currencies() returned empty")
+	}
+	for i := 1; i < len(codes); i++ {
+		if codes[i-1] >= codes[i] {
+			t.Fatalf("codes not sorted at index %d: %q >= %q", i, codes[i-1], codes[i])
+		}
+	}
+	// mutation should not affect the internal map
+	codes[0] = "MUTATED"
+	fresh := Currencies()
+	if fresh[0] == "MUTATED" {
+		t.Error("Currencies() returned shared slice; caller mutation leaked back")
+	}
+}
