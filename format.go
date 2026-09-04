@@ -136,7 +136,7 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 		style = opts[0]
 	}
 	numberStr := formatLocalisedNumber(p, m.amount, m.currency.decimals)
-	return applyCLDRTemplate(p, cur, m.currency, m.amount < 0, style, numberStr)
+	return applyCLDRTemplate(p, cur, m.currency, false, style, numberStr)
 }
 
 // fracFormats holds pre-computed "%0Nd" format strings for every supported
@@ -184,29 +184,32 @@ func formatLocalisedNumber(p *message.Printer, amount int64, decimals int) strin
 	return numberStr
 }
 
-// applyCLDRTemplate substitutes our exact numberStr into the CLDR currency
-// template for the chosen SymbolStyle. If the CLDR template has no unique
-// placeholder to substitute into (unlikely, but possible for exotic
-// locales) it falls back to symbol + number so the caller always gets a
-// non-empty rendering.
-func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, negative bool, style SymbolStyle, numberStr string) string {
-	sampleAmount := 1.0
-	if negative {
-		sampleAmount = -1.0
-	}
-	amt := cur.Amount(sampleAmount)
-	var sampleTemplate string
+// applyCLDRTemplate wraps our exact numberStr in the currency prefix and
+// suffix that CLDR uses for the chosen SymbolStyle, discovered by probing
+// with a zero amount. This is more robust than the previous approach of
+// substituting a live sample value into the template: a zero probe cannot
+// collide with template literals such as "1" or "1.00" that appear in some
+// exotic CLDR patterns, and it keeps the negative-sign handling in
+// formatLocalisedNumber where it belongs.
+func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, _ bool, style SymbolStyle, numberStr string) string {
+	zero := cur.Amount(0.0)
+	var probe string
 	switch style {
 	case SymbolStyleStandard:
-		sampleTemplate = p.Sprint(amt)
+		probe = p.Sprint(zero)
 	case SymbolStyleISO:
-		sampleTemplate = p.Sprint(currency.ISO(amt))
+		probe = p.Sprint(currency.ISO(zero))
 	default:
-		sampleTemplate = p.Sprint(currency.NarrowSymbol(amt))
+		probe = p.Sprint(currency.NarrowSymbol(zero))
 	}
-	samplePlaceholder := p.Sprintf("%.*f", c.decimals, sampleAmount)
-	if strings.Count(sampleTemplate, samplePlaceholder) == 1 {
-		return strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
+	zeroNumber := p.Sprintf("%.*f", c.decimals, 0.0)
+	// LastIndex locates the numeric slot even if the currency template
+	// contains a literal "0" (uncommon but possible). If the number is not
+	// found for any reason, fall back to symbol + number so we always
+	// return a non-empty rendering.
+	idx := strings.LastIndex(probe, zeroNumber)
+	if idx < 0 {
+		return c.symbol + numberStr
 	}
-	return c.symbol + numberStr
+	return probe[:idx] + numberStr + probe[idx+len(zeroNumber):]
 }
