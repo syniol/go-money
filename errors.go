@@ -17,6 +17,7 @@ var (
 	ErrEmptyInput        = errors.New("input string cannot be empty")
 	ErrMalformedInput    = errors.New("input contains invalid characters or structure")
 	ErrInvalidSplitCount = fmt.Errorf("split count must be between 1 and %d", MaxSplitParts)
+	ErrInvalidRoundingMode = errors.New("invalid rounding mode")
 )
 
 // MoneyError wraps a sentinel error with contextual information about the

@@ -884,3 +884,10 @@ func TestMoney_Valid(t *testing.T) {
 		t.Error("USD zero amount .Valid() = false, want true")
 	}
 }
+
+func TestFromDecimal_UnknownMode(t *testing.T) {
+	_, err := FromDecimal(1.0, "USD", RoundingMode(99))
+	if !errors.Is(err, ErrInvalidRoundingMode) {
+		t.Errorf("err = %v, want ErrInvalidRoundingMode", err)
+	}
+}
