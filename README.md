@@ -40,8 +40,14 @@ m, err := money.New(1050, "USD") // $10.50
 // Hardened string parsing (Ideal for API inputs)
 price, err := money.NewFromString("1234.56", "EUR")
 
-// Panic-safe MustNew for package-level constants
+// MustNew panics on invalid input; use it only for package-level constants
 var DefaultFee = money.MustNew(500, "USD") // $5.00
+
+// Look up currency metadata without constructing a Money value
+usd, ok := money.GetCurrency("USD")
+if ok {
+    fmt.Println(usd.Symbol(), usd.Decimals()) // $ 2
+}
 ```
 
 ### High-Integrity Arithmetic
@@ -56,8 +62,30 @@ if err != nil {
     // Handles ErrCurrencyMismatch or ErrOverflow
 }
 
-// Comparison
-isWealthy, _ := total.IsGreaterThan(money.MustNew(100, "USD"))
+// Comparison via Compare (returns int, error) or Cmp (panics on mismatch)
+cmp, _ := total.Compare(money.MustNew(100, "USD"))
+isWealthy := cmp > 0
+
+// Equal is a bool-returning shortcut, false on currency mismatch
+same := total.Equal(money.MustNew(1200, "USD"))
+_ = same
+
+// Sign helpers
+neg, _ := total.Neg()
+abs, _ := neg.Abs()
+_ = abs
+```
+
+### Text and JSON codecs
+
+```go
+// JSON: {"amount":"10.50","currency":"USD"}
+data, _ := json.Marshal(money.MustNew(1050, "USD"))
+
+// Text: "10.50 USD" for YAML, TOML, URL params, flag.TextVar
+text, _ := money.MustNew(1050, "USD").MarshalText()
+_ = data
+_ = text
 ```
 
 ### Advanced Rounding (The Banker's Way)
