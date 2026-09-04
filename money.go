@@ -67,14 +67,18 @@ func (m Money) Currency() string {
 // currency will refuse it. Prefer Valid over comparing Currency() to "".
 func (m Money) Valid() bool { return m.currency != nil }
 
-// IsZero reports whether the amount is exactly zero.
-func (m Money) IsZero() bool { return m.amount == 0 }
+// IsZero reports whether the amount is exactly zero. Returns false for a
+// zero-value Money that has no currency, because "zero" without a currency
+// is not a valid amount.
+func (m Money) IsZero() bool { return m.currency != nil && m.amount == 0 }
 
 // IsPositive reports whether the amount is strictly greater than zero.
-func (m Money) IsPositive() bool { return m.amount > 0 }
+// Returns false for a zero-value Money without a currency.
+func (m Money) IsPositive() bool { return m.currency != nil && m.amount > 0 }
 
 // IsNegative reports whether the amount is strictly less than zero.
-func (m Money) IsNegative() bool { return m.amount < 0 }
+// Returns false for a zero-value Money without a currency.
+func (m Money) IsNegative() bool { return m.currency != nil && m.amount < 0 }
 
 // assertSameCurrency compares by ISOCode rather than pointer identity so that
 // a test double or a caller who legitimately constructs a *Currency outside

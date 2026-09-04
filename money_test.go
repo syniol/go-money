@@ -903,3 +903,10 @@ func TestLocalisedString_SymbolStyle(t *testing.T) {
 		t.Errorf("SymbolStyleNarrow output %q missing $", narrow)
 	}
 }
+
+func TestZeroValueMoney_HasNoTruthyPredicate(t *testing.T) {
+	var m Money
+	if m.IsZero() || m.IsPositive() || m.IsNegative() {
+		t.Error("zero-value Money should not satisfy any predicate; currency is missing")
+	}
+}
