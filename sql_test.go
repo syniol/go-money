@@ -152,6 +152,25 @@ func TestNullMoney_ScanInvalidClearsValid(t *testing.T) {
 	}
 }
 
+// TestNullMoney_ScanFailurePreservesPreviousMoney documents the
+// intentional behaviour that a failed Scan leaves nm.Money untouched
+// (matching database/sql.NullString semantics), even though Valid is
+// cleared. Callers reusing a NullMoney across rows must check err
+// before reading nm.Money.
+func TestNullMoney_ScanFailurePreservesPreviousMoney(t *testing.T) {
+	prev := MustNew(999, "USD")
+	nm := NullMoney{Money: prev, Valid: true}
+	if err := nm.Scan("garbage"); err == nil {
+		t.Fatal("garbage Scan returned nil error")
+	}
+	if nm.Valid {
+		t.Error("Valid must be cleared on error")
+	}
+	if !nm.Money.Equal(prev) {
+		t.Errorf("Money = %v, want previous %v (documented staleness contract)", nm.Money, prev)
+	}
+}
+
 func TestNullMoney_ValueRoundTrip(t *testing.T) {
 	// Valid NullMoney round-trips through Value/Scan.
 	nm := NullMoney{Money: MustNew(1234, "GBP"), Valid: true}
