@@ -30,7 +30,8 @@ func (m Money) AsDecimalString() string {
 		uval = uint64(val)
 	}
 	decimals := m.currency.Decimals
-	// 20 digits for MaxUint64 + 1 dot + 1 sign = 22; buffer to 24 for margin.
+	// |MaxInt64| is 19 digits, plus one '.' and one '-' sign gives 21 bytes.
+	// Buffer to 24 for a small safety margin.
 	var buf [24]byte
 	n := len(buf)
 	for i := 0; i < decimals; i++ {
