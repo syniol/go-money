@@ -79,13 +79,16 @@ func getPow10(n int) int64 {
 	panic(fmt.Sprintf("money: scale %d exceeds maximum supported scale %d", n, MaxSafeDecimals))
 }
 
-// validateScale is defence in depth against a broken code generator; the
-// generated currencyConfig should never contain an unsafe scale in practice.
-func validateScale(c *Currency) error {
-	if c.Decimals > MaxSafeDecimals {
-		return ErrUnsafeScale
+// init runs the defence-in-depth scale check once at package load rather
+// than on every New call. A broken code generator will panic here instead
+// of returning ErrUnsafeScale to every caller.
+func init() {
+	for _, c := range currencyConfig {
+		if c.Decimals > MaxSafeDecimals {
+			panic(fmt.Sprintf("money: currency %s has Decimals=%d exceeding MaxSafeDecimals=%d",
+				c.ISOCode, c.Decimals, MaxSafeDecimals))
+		}
 	}
-	return nil
 }
 
 // The MajorSingle, MajorPlural, MinorSingle and MinorPlural fields on
