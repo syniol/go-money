@@ -761,19 +761,29 @@ func TestCurrency_HasISONum(t *testing.T) {
 	if !currencyConfig["USD"].HasISONum() {
 		t.Error("USD.HasISONum() = false, want true")
 	}
-	// Ensure at least one currency in the generated map exercises the sentinel.
-	// If none exists in the current dataset, the null-preservation contract
-	// still holds because the sentinel constant is what the template emits.
-	seenUnknown := false
+	// Any dataset entry that HasISONum reports as unknown must equal the
+	// sentinel exactly; otherwise the generator lost a distinction.
 	for _, c := range currencyConfig {
-		if !c.HasISONum() {
-			seenUnknown = true
-			if c.ISONum != ISONumUnknown {
-				t.Errorf("%s: HasISONum false but ISONum = %d, want ISONumUnknown", c.ISOCode, c.ISONum)
-			}
+		if !c.HasISONum() && c.ISONum != ISONumUnknown {
+			t.Errorf("%s: HasISONum false but ISONum = %d, want ISONumUnknown", c.ISOCode, c.ISONum)
 		}
 	}
-	_ = seenUnknown
+	// Synthetic construction: guarantee the sentinel path is exercised even
+	// when the current generated dataset happens to have no nulls.
+	syntheticUnknown := &Currency{ISOCode: "XXX", ISONum: ISONumUnknown, NumToBasic: NumToBasicUnknown}
+	if syntheticUnknown.HasISONum() {
+		t.Error("synthetic Currency with ISONumUnknown reported HasISONum = true")
+	}
+	if syntheticUnknown.HasNumToBasic() {
+		t.Error("synthetic Currency with NumToBasicUnknown reported HasNumToBasic = true")
+	}
+	syntheticKnown := &Currency{ISOCode: "YYY", ISONum: 999, NumToBasic: 100}
+	if !syntheticKnown.HasISONum() {
+		t.Error("synthetic Currency with real ISONum reported HasISONum = false")
+	}
+	if !syntheticKnown.HasNumToBasic() {
+		t.Error("synthetic Currency with real NumToBasic reported HasNumToBasic = false")
+	}
 }
 
 func TestNewFromString_OverflowingIntegerPart(t *testing.T) {
