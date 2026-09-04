@@ -144,7 +144,22 @@ case errors.Is(err, money.ErrOverflow):
 }
 ```
 
-Sentinels: `ErrInvalidCurrency`, `ErrInvalidFormat`, `ErrTooMuchDetail`, `ErrCurrencyMismatch`, `ErrOverflow`, `ErrAmountTooLarge`, `ErrInputTooLong`, `ErrEmptyInput`, `ErrMalformedInput`, `ErrInvalidSplitCount`, `ErrInvalidRoundingMode`, `ErrUnsafeScale`.
+Sentinels:
+
+| Sentinel | Fires when |
+|---|---|
+| `ErrInvalidCurrency` | Currency code is empty, not ISO 4217, or unknown to the library. |
+| `ErrInvalidFormat` | `NewFromString` input has structural problems the strict validator rejects (stray characters, wrong shape). |
+| `ErrTooMuchDetail` | String input carries more fractional digits than the currency's `Decimals` allows (e.g. `"1.234"` for USD). |
+| `ErrCurrencyMismatch` | An arithmetic or comparison operation combines two `Money` values with different currencies. |
+| `ErrOverflow` | `Add`, `Sub`, `Mul`, `Neg` or `Abs` would exceed `int64` range. |
+| `ErrAmountTooLarge` | `NewFromString` or `FromDecimal` produces a value beyond `math.MaxInt64` or below `math.MinInt64`. |
+| `ErrInputTooLong` | `NewFromString` input exceeds `MaxStringLength` (64 bytes after trimming). |
+| `ErrEmptyInput` | Parser or codec receives an empty or whitespace-only value, or a SQL `NULL` is scanned into a plain `Money`. |
+| `ErrMalformedInput` | JSON, text or SQL input is unparseable or of an unsupported source type. |
+| `ErrInvalidSplitCount` | `Split(n)` called with `n` outside `[1, MaxSplitParts]`. |
+| `ErrInvalidRoundingMode` | `FromDecimal` called with a mode not in the exported `RoundingMode` set. |
+| `ErrUnsafeScale` | Defence in depth: a `Currency`'s `Decimals` exceeds `MaxSafeDecimals`. In practice only fires if the code generator is broken. |
 
 ## Localised display
 
