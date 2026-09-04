@@ -54,7 +54,7 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	case RoundUp:
 		rounded = int64(math.Ceil(scaledValue))
 	default:
-		rounded = int64(math.RoundToEven(scaledValue))
+		return Money{}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrInvalidRoundingMode}
 	}
 	return Money{amount: rounded, currency: cfg}, nil
 }
