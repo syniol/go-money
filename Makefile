@@ -1,4 +1,4 @@
-.PHONY: all build test test-race test-cover vet fmt lint clean help generate bench fuzz install-tools deps check
+.PHONY: all build test test-race test-cover vet fmt lint clean help generate bench bench-compare fuzz install-tools deps check
 
 # Default Go settings
 GO := go
@@ -77,10 +77,16 @@ generate:
 	@echo "Generating code..."
 	$(GO) generate $(PKG)
 
-# Run benchmarks
+# Run in-repo benchmarks
 bench:
 	@echo "Running benchmarks..."
 	$(GO) test $(GOFLAGS) -bench=. -benchmem $(PKG)
+
+# Run cross-library comparison benchmarks (Rhymond, bojanz, leekchan).
+# See BENCHMARK.md for the current table and interpretation.
+bench-compare:
+	@echo "Running comparison benchmarks..."
+	cd benchmarks && $(GO) test -bench=. -benchmem -run=^$$ -benchtime=3s -count=1
 
 # Run fuzz tests
 fuzz:
