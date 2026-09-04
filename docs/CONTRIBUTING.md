@@ -63,6 +63,26 @@ Update `docs/BENCHMARK.md` if the headline table shifts materially.
 3. **Update `README.md` and add an entry to `docs/BENCHMARK.md` or `CHANGELOG.md`** when the change is user-visible.
 4. **Prefer small, focused PRs.** One concern per PR; if a PR grows past ~500 lines of net change, consider splitting.
 
+## Releasing
+
+Releases are cut by pushing a semver tag from `main`:
+
+```sh
+git checkout main && git pull --ff-only
+git tag v1.5.0
+git push origin v1.5.0
+```
+
+The `Release Pipeline` GitHub Actions workflow (`.github/workflows/release.yml`) then:
+
+1. Refuses to run if the tag is not reachable from `origin/main`.
+2. Re-runs `go vet`, `go test -race`, the `sqltest/` integration suite and a `go generate` drift check.
+3. Builds a `go-money-<version>.tar.gz` source archive plus a SHA-256 checksum.
+4. Emits an SPDX SBOM and a GitHub build-provenance attestation.
+5. Publishes a GitHub Release with auto-generated notes and the three artefacts attached.
+
+`pkg.go.dev` picks up the new tag automatically via the module proxy; no separate step is required.
+
 ## Licence
 
 By contributing you agree that your work is licensed under this project's [BSD 3-Clause Licence](../LICENSE).
