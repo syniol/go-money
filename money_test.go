@@ -912,3 +912,31 @@ func TestZeroValueMoney_HasNoTruthyPredicate(t *testing.T) {
 		t.Error("zero-value Money should not satisfy any predicate; currency is missing")
 	}
 }
+
+func TestFromDecimal_ZeroDecimalsCurrency(t *testing.T) {
+	// JPY has zero decimals; the multiplier is 1 and rounding modes should
+	// select the correct integer round.
+	tests := []struct {
+		name string
+		val  float64
+		mode RoundingMode
+		want int64
+	}{
+		{"bankers even 10.5", 10.5, RoundHalfToEven, 10},
+		{"bankers odd 11.5", 11.5, RoundHalfToEven, 12},
+		{"away from zero 10.5", 10.5, RoundHalfAwayFromZero, 11},
+		{"floor 10.9", 10.9, RoundDown, 10},
+		{"ceil 10.1", 10.1, RoundUp, 11},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FromDecimal(tt.val, "JPY", tt.mode)
+			if err != nil {
+				t.Fatalf("err = %v", err)
+			}
+			if got.Minor() != tt.want {
+				t.Errorf("Minor() = %d, want %d", got.Minor(), tt.want)
+			}
+		})
+	}
+}
