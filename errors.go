@@ -31,6 +31,9 @@ type MoneyError struct {
 }
 
 func (e *MoneyError) Error() string {
+	if e == nil {
+		return "<nil>"
+	}
 	if e.Amount != "" && e.Currency != "" {
 		return fmt.Sprintf("money.%s(%s, %s): %v", e.Op, e.Amount, e.Currency, e.Err)
 	}
@@ -40,4 +43,9 @@ func (e *MoneyError) Error() string {
 	return fmt.Sprintf("money.%s: %v", e.Op, e.Err)
 }
 
-func (e *MoneyError) Unwrap() error { return e.Err }
+func (e *MoneyError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
