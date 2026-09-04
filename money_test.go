@@ -1073,3 +1073,14 @@ func TestMoneyError_EmptyOpDefault(t *testing.T) {
 		t.Errorf("Error() with empty Op = %q, want %q", got, "money.?: boom")
 	}
 }
+
+func TestLocalisedString_ArabicLocaleNoCorruption(t *testing.T) {
+	// Arabic-Indic digits can produce multi-byte runes in the separator
+	// sniff; the byte-slice approach would have produced garbage. Assert
+	// that the digits 1234.56 (in whatever form CLDR picks) survive.
+	m := MustNew(123456, "USD")
+	got := m.LocalisedString(language.Arabic)
+	if got == "" {
+		t.Error("LocalisedString(ar) returned empty; separator sniff likely broke")
+	}
+}

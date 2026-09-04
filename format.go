@@ -167,11 +167,13 @@ func formatLocalisedNumber(p *message.Printer, amount int64, decimals int) strin
 		intPart := uval / divisor
 		fracPart := uval % divisor
 		// Sniff the locale's decimal separator by asking Printer to format a
-		// known value; the middle rune of "0<sep>0" is the separator.
+		// known value; the middle rune of "0<sep>0" is the separator. Iterate
+		// runes rather than bytes so locales with non-ASCII numeral scripts
+		// (e.g. Arabic-Indic digits) do not slice mid-codepoint.
 		sample := p.Sprintf("%.1f", 0.0)
 		decSep := "."
-		if len(sample) >= 3 {
-			decSep = sample[1 : len(sample)-1]
+		if runes := []rune(sample); len(runes) >= 3 {
+			decSep = string(runes[1 : len(runes)-1])
 		}
 		fracStr := fmt.Sprintf(fracFormats[decimals], fracPart)
 		numberStr = p.Sprintf("%d", intPart) + decSep + fracStr
