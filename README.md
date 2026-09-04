@@ -130,6 +130,34 @@ for _, code := range money.Currencies() {
 }
 ```
 
+## Localised display
+
+```go
+m := money.MustNew(123456789, "EUR")
+
+fmt.Println(m.LocalisedString(language.French))
+// "1 234 567,89 €"  (NBSP thousands separator preserved)
+
+fmt.Println(m.LocalisedString(language.AmericanEnglish, money.SymbolStyleISO))
+// "USD 1,234,567.89"
+```
+
+`LocalisedString` is not zero-allocation (typically five to six small allocations per call for the CLDR template dance). Use `String()` for hot paths and `LocalisedString` for user-facing text.
+
+## Precision limits
+
+Amounts are stored as `int64` minor units. Practical maxima:
+
+| Currency decimals | Max representable amount |
+|---:|---|
+| 0 (JPY, KRW) | ±9.22 × 10^18 |
+| 2 (USD, EUR, GBP) | ±$92 quadrillion |
+| 4 (CLF) | ±$922 trillion |
+| 8 (crypto sats) | ±$92 billion |
+| 12 | ±$9 million |
+
+If you need larger amounts, track [issue #17](https://github.com/syniol/go-money/issues/17).
+
 ## Error handling
 
 Every failure returns a `*money.MoneyError` wrapping a sentinel error, comparable with `errors.Is`.
@@ -160,34 +188,6 @@ Sentinels:
 | `ErrInvalidSplitCount` | `Split(n)` called with `n` outside `[1, MaxSplitParts]`. |
 | `ErrInvalidRoundingMode` | `FromDecimal` called with a mode not in the exported `RoundingMode` set. |
 | `ErrUnsafeScale` | Defence in depth: a `Currency`'s `Decimals` exceeds `MaxSafeDecimals`. In practice only fires if the code generator is broken. |
-
-## Localised display
-
-```go
-m := money.MustNew(123456789, "EUR")
-
-fmt.Println(m.LocalisedString(language.French))
-// "1 234 567,89 €"  (NBSP thousands separator preserved)
-
-fmt.Println(m.LocalisedString(language.AmericanEnglish, money.SymbolStyleISO))
-// "USD 1,234,567.89"
-```
-
-`LocalisedString` is not zero-allocation (typically five to six small allocations per call for the CLDR template dance). Use `String()` for hot paths and `LocalisedString` for user-facing text.
-
-## Precision limits
-
-Amounts are stored as `int64` minor units. Practical maxima:
-
-| Currency decimals | Max representable amount |
-|---:|---|
-| 0 (JPY, KRW) | ±9.22 × 10^18 |
-| 2 (USD, EUR, GBP) | ±$92 quadrillion |
-| 4 (CLF) | ±$922 trillion |
-| 8 (crypto sats) | ±$92 billion |
-| 12 | ±$9 million |
-
-If you need larger amounts, track [issue #17](https://github.com/syniol/go-money/issues/17).
 
 ## Development
 
