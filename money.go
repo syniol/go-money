@@ -16,6 +16,8 @@ package money
 
 //go:generate go run cmd/gen_currencies/main.go
 
+import "sort"
+
 // Money is an immutable monetary amount in a specific currency.
 //
 // Amounts are stored in the currency's minor units so all arithmetic stays
@@ -53,6 +55,30 @@ func MustNew(minorAmount int64, currencyCode string) Money {
 		panic(err)
 	}
 	return m
+}
+
+// GetCurrency returns the interned *Currency for the given ISO 4217 code and
+// whether it was found. Use it when you need currency metadata (symbol,
+// decimals, ISO num) without constructing a Money value.
+//
+// The returned pointer references the same instance stored in the package
+// map; treat it as read-only. Its accessor methods (ISOCode, Symbol,
+// Decimals, etc.) expose every field safely.
+func GetCurrency(code string) (*Currency, bool) {
+	c, ok := currencyConfig[code]
+	return c, ok
+}
+
+// Currencies returns the ISO 4217 codes of every supported currency in
+// alphabetical order. Useful for iteration in tooling or UIs; the returned
+// slice is safe to mutate as it is freshly allocated.
+func Currencies() []string {
+	codes := make([]string, 0, len(currencyConfig))
+	for code := range currencyConfig {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	return codes
 }
 
 // Minor returns the raw amount in the currency's minor unit.
