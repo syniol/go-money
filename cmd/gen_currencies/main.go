@@ -1,12 +1,19 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
 	"text/template"
 )
+
+// isoData is the ISO 4217 source, embedded at build time so the generator
+// is independent of the working directory it is invoked from.
+//
+//go:embed iso-4217.json
+var isoData []byte
 
 // ConfigRaw matches the structure of your iso-4217.json.
 // Pointers for ISONum and NumToBasic handle the 'null' values (like in ZWB).
@@ -57,16 +64,9 @@ type TemplateData struct {
 }
 
 func main() {
-	// 1. Read the raw JSON data
-	data, err := os.ReadFile("iso-4217.json")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading JSON: %v\n", err)
-		os.Exit(1)
-	}
-
-	// 2. Parse into internal map
+	// 1. Parse the embedded JSON into an internal map.
 	var rawConfigs map[string]ConfigRaw
-	if err := json.Unmarshal(data, &rawConfigs); err != nil {
+	if err := json.Unmarshal(isoData, &rawConfigs); err != nil {
 		fmt.Fprintf(os.Stderr, "Error unmarshaling: %v\n", err)
 		os.Exit(1)
 	}
