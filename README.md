@@ -128,7 +128,7 @@ if ok {
 }
 
 for _, code := range money.Currencies() {
-    // 150+ codes generated from iso-4217.json
+    // 150+ codes generated from cmd/gen_currencies/iso-4217.json
     _ = code
 }
 ```
@@ -214,7 +214,7 @@ Every merge to `main` runs `go vet`, `staticcheck`, `govulncheck`, tests with ra
 
 ## Data source
 
-Currency metadata is generated from `iso-4217.json` by `cmd/gen_currencies`. Regenerate with `go generate ./...`; CI fails on drift. See the [ISO 4217 standard](https://www.iso.org/iso-4217-currency-codes.html) for the upstream.
+Currency metadata is generated from `cmd/gen_currencies/iso-4217.json` by `cmd/gen_currencies/main.go`, which embeds the JSON at build time via `//go:embed`. Regenerate with `go generate ./...`; CI fails on drift. See the [ISO 4217 standard](https://www.iso.org/iso-4217-currency-codes.html) for the upstream.
 
 ## Roadmap
 

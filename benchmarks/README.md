@@ -12,7 +12,7 @@ go test -bench=. -benchmem -run=^$ -benchtime=3s -count=1
 
 ## Interpret
 
-Results are collated in [`../BENCHMARK.md`](../BENCHMARK.md). When updating that file, regenerate on the same hardware and paste the raw output section headers exactly.
+Results are collated in [`../docs/BENCHMARK.md`](../docs/BENCHMARK.md). When updating that file, regenerate on the same hardware and paste the raw output section headers exactly.
 
 ## Update pinned versions
 
@@ -21,4 +21,4 @@ go get -u ./...
 go mod tidy
 ```
 
-Then re-run and update `../BENCHMARK.md`.
+Then re-run and update `../docs/BENCHMARK.md`.
