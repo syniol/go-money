@@ -68,6 +68,32 @@ func (m Money) String() string {
 	return m.currency.symbol + m.AsDecimalString()
 }
 
+// Format implements fmt.Formatter so %v, %s, %+v, %#v and %q print
+// consistently and never leak the raw unexported struct layout.
+//
+//   - %s and %v render the same as String (e.g. "$10.50")
+//   - %+v renders as "money.Money{amount:1050 currency:USD}" for logs
+//     that want a structured view without leaking pointers
+//   - %#v renders the same as %+v for Go-syntax debugging
+//   - %q wraps String output in double quotes
+//
+// Unknown verbs fall back to a "%!verb(money.Money=...)" marker so an
+// accidental %d does not silently print nothing.
+func (m Money) Format(f fmt.State, verb rune) {
+	switch verb {
+	case 's', 'v':
+		if f.Flag('+') || f.Flag('#') {
+			fmt.Fprintf(f, "money.Money{amount:%d currency:%s}", m.amount, m.Currency())
+			return
+		}
+		fmt.Fprint(f, m.String())
+	case 'q':
+		fmt.Fprintf(f, "%q", m.String())
+	default:
+		fmt.Fprintf(f, "%%!%c(money.Money=%s)", verb, m.String())
+	}
+}
+
 // SymbolStyle selects which currency form LocalisedString substitutes into
 // the CLDR template. Passing no option defaults to SymbolStyleNarrow to
 // preserve the historical output.
