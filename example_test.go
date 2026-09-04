@@ -243,3 +243,59 @@ func ExampleMoney_UnmarshalJSON() {
 	// 1599
 	// £15.99
 }
+
+func ExampleMoney_Neg() {
+	m := money.MustNew(1050, "USD")
+	neg, _ := m.Neg()
+	fmt.Println(neg.String())
+	// Output: $-10.50
+}
+
+func ExampleMoney_Abs() {
+	m := money.MustNew(-1050, "USD")
+	abs, _ := m.Abs()
+	fmt.Println(abs.String())
+	// Output: $10.50
+}
+
+func ExampleMoney_Cmp() {
+	a := money.MustNew(1000, "USD")
+	b := money.MustNew(2000, "USD")
+	fmt.Println(a.Cmp(b))
+	fmt.Println(b.Cmp(a))
+	fmt.Println(a.Cmp(a))
+	// Output:
+	// -1
+	// 1
+	// 0
+}
+
+func ExampleGetCurrency() {
+	usd, ok := money.GetCurrency("USD")
+	if !ok {
+		fmt.Println("not found")
+		return
+	}
+	fmt.Println(usd.ISOCode(), usd.Symbol(), usd.Decimals())
+	// Output: USD $ 2
+}
+
+func ExampleCurrencies() {
+	codes := money.Currencies()
+	fmt.Println(codes[0], "...", codes[len(codes)-1])
+	// Output: AED ... ZWL
+}
+
+func ExampleMoney_MarshalText() {
+	m := money.MustNew(1050, "USD")
+	b, _ := m.MarshalText()
+	fmt.Println(string(b))
+	// Output: 10.50 USD
+}
+
+func ExampleMoney_UnmarshalText() {
+	var m money.Money
+	_ = m.UnmarshalText([]byte("15.99 GBP"))
+	fmt.Println(m.Minor(), m.Currency())
+	// Output: 1599 GBP
+}
