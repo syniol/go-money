@@ -59,7 +59,8 @@ func (c *Currency) MajorPlural() string { return c.majorPlural }
 // upstream source has no numeric code. Use HasISONum to distinguish.
 func (c *Currency) ISONum() int { return c.isoNum }
 
-// Symbol returns the ASCII-safe currency symbol (e.g. "$").
+// Symbol returns the currency symbol as a UTF-8 string (e.g. "$", "€",
+// "¥", "£", "د.إ."). The value is not restricted to ASCII.
 func (c *Currency) Symbol() string { return c.symbol }
 
 // SymbolNative returns the native-script symbol.
