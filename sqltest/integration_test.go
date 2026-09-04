@@ -6,6 +6,7 @@ package sqltest
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
 
 	money "github.com/syniol/go-money"
@@ -14,6 +15,8 @@ import (
 
 func open(t *testing.T) *sql.DB {
 	t.Helper()
+	// Driver name "sqlite" is specific to modernc.org/sqlite. If you swap
+	// in github.com/mattn/go-sqlite3 (CGO), the name is "sqlite3".
 	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
 		t.Fatalf("open: %v", err)
@@ -52,10 +55,11 @@ func TestSQLite_NullMoney_RoundTrip(t *testing.T) {
 		t.Fatalf("insert null: %v", err)
 	}
 
-	// Row with a real refund.
-	real := money.NullMoney{Money: money.MustNew(500, "GBP"), Valid: true}
-	if _, err := db.Exec(`INSERT INTO orders (id, total, refund) VALUES (?, ?, ?)`, 2, orig, real); err != nil {
-		t.Fatalf("insert real: %v", err)
+	// Row with a real refund. Avoid the identifier `real`, which shadows
+	// the Go built-in that returns the real part of a complex number.
+	filledRefund := money.NullMoney{Money: money.MustNew(500, "GBP"), Valid: true}
+	if _, err := db.Exec(`INSERT INTO orders (id, total, refund) VALUES (?, ?, ?)`, 2, orig, filledRefund); err != nil {
+		t.Fatalf("insert filled: %v", err)
 	}
 
 	var (
@@ -73,10 +77,10 @@ func TestSQLite_NullMoney_RoundTrip(t *testing.T) {
 	}
 
 	if err := db.QueryRow(`SELECT total, refund FROM orders WHERE id = ?`, 2).Scan(&total, &rf); err != nil {
-		t.Fatalf("scan real row: %v", err)
+		t.Fatalf("scan filled row: %v", err)
 	}
-	if !rf.Valid || !rf.Money.Equal(real.Money) {
-		t.Errorf("refund = %+v, want %+v", rf, real)
+	if !rf.Valid || !rf.Money.Equal(filledRefund.Money) {
+		t.Errorf("refund = %+v, want %+v", rf, filledRefund)
 	}
 }
 
@@ -88,6 +92,12 @@ func TestSQLite_MalformedColumn_Errors(t *testing.T) {
 	var got money.Money
 	err := db.QueryRow(`SELECT total FROM orders WHERE id = ?`, 1).Scan(&got)
 	if err == nil {
-		t.Errorf("Scan returned nil on malformed column value")
+		t.Fatalf("Scan returned nil on malformed column value")
+	}
+	// "not a money value" cuts on the first space to ("not", "a money
+	// value"); the second half is not a valid ISO code, so we expect
+	// ErrInvalidCurrency, not a generic parse error.
+	if !errors.Is(err, money.ErrInvalidCurrency) {
+		t.Errorf("Scan err = %v, want ErrInvalidCurrency", err)
 	}
 }
