@@ -111,10 +111,11 @@ func (m Money) IsPositive() bool { return m.currency != nil && m.amount > 0 }
 func (m Money) IsNegative() bool { return m.currency != nil && m.amount < 0 }
 
 // assertSameCurrency compares by ISOCode rather than pointer identity so
-// that a Currency handed back through a future accessor and re-used
-// alongside a map-interned instance still compares equal. Pointer identity
-// would be faster but every external *Currency reference has to survive
-// re-entry through the package without being flagged as a mismatch.
+// that a *Currency obtained via GetCurrency (or any future accessor) can
+// travel through user code, be re-attached to a Money constructed by New,
+// and still compare equal to another Money for the same currency. Pointer
+// identity would be faster but would trip a spurious ErrCurrencyMismatch
+// whenever a caller round-tripped a *Currency through unrelated code.
 func (m Money) assertSameCurrency(other Money) error {
 	if m.currency == nil || other.currency == nil {
 		return ErrCurrencyMismatch
