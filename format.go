@@ -75,7 +75,8 @@ func (m Money) String() string {
 //   - %s and %v render the same as String (e.g. "$10.50")
 //   - %+v renders as "money.Money{amount:1050 currency:USD}" for logs
 //     that want a structured view without leaking pointers
-//   - %#v renders the same as %+v for Go-syntax debugging
+//   - %#v renders as "money.MustNew(1050, \"USD\")", a valid Go expression
+//     that reconstructs the value, matching the stdlib %#v convention
 //   - %q wraps String output in double quotes
 //
 // Unknown verbs fall back to a "%!verb(money.Money=...)" marker so an
@@ -83,11 +84,14 @@ func (m Money) String() string {
 func (m Money) Format(f fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':
-		if f.Flag('+') || f.Flag('#') {
+		switch {
+		case f.Flag('#'):
+			fmt.Fprintf(f, "money.MustNew(%d, %q)", m.amount, m.Currency())
+		case f.Flag('+'):
 			fmt.Fprintf(f, "money.Money{amount:%d currency:%s}", m.amount, m.Currency())
-			return
+		default:
+			fmt.Fprint(f, m.String())
 		}
-		fmt.Fprint(f, m.String())
 	case 'q':
 		fmt.Fprintf(f, "%q", m.String())
 	default:
