@@ -97,10 +97,13 @@ func (m Money) Split(n int) ([]Money, error) {
 	return results, nil
 }
 
-// Cmp returns -1, 0, or 1 for less than, equal, greater than. It panics on
-// currency mismatch, matching the shape of bytes.Compare and big.Int.Cmp so
-// it can be used directly as a sort.Slice adapter. Callers that cannot
-// guarantee same-currency inputs should use Compare instead.
+// Cmp returns -1, 0, or 1 for less than, equal, greater than, in the
+// same three-valued shape as bytes.Compare, strings.Compare and
+// big.Int.Cmp. Unlike those (which operate on types that have no notion
+// of currency), Cmp panics on currency mismatch because there is no
+// meaningful ordering between amounts in different currencies. Use
+// Cmp when you already know the currencies match (typical for sort.Slice
+// adapters over a homogeneous slice); use Compare when you do not.
 //
 // The panic value is the *MoneyError returned by Compare. Callers using
 // recover should type-assert against the error interface (or *MoneyError
