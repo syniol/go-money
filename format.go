@@ -88,6 +88,12 @@ const (
 // NBSP and other non-breaking spaces produced by CLDR are preserved: they are
 // legitimate thousands separators in French, Russian, Swedish and others.
 // Pass a SymbolStyle to change which currency form is used.
+//
+// Performance: LocalisedString is not zero-allocation. It builds several
+// small strings via message.Printer (locale-aware separator sniffing plus
+// integer, fractional and CLDR template rendering) and typically allocates
+// on the order of half a dozen small buffers per call. Use it for display,
+// not for hot logging paths; for allocation-free rendering, use String.
 func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 	if m.currency == nil {
 		return ""
