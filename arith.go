@@ -125,6 +125,34 @@ func (m Money) Compare(other Money) (int, error) {
 	}
 }
 
+// Neg returns a new Money with the sign flipped. It refuses only when the
+// receiver's amount is math.MinInt64, whose negation cannot be represented
+// in int64. Zero-value Money returns a zero-value Money with no error.
+func (m Money) Neg() (Money, error) {
+	if m.currency == nil {
+		return Money{}, nil
+	}
+	if m.amount == math.MinInt64 {
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Neg", Err: ErrOverflow}
+	}
+	return Money{amount: -m.amount, currency: m.currency}, nil
+}
+
+// Abs returns a new Money with the amount replaced by its absolute value.
+// Like Neg, it refuses when the amount is math.MinInt64.
+func (m Money) Abs() (Money, error) {
+	if m.currency == nil {
+		return Money{}, nil
+	}
+	if m.amount == math.MinInt64 {
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Abs", Err: ErrOverflow}
+	}
+	if m.amount < 0 {
+		return Money{amount: -m.amount, currency: m.currency}, nil
+	}
+	return m, nil
+}
+
 // Equal reports whether m and other have the same currency and amount. It
 // returns false rather than an error on mismatch, matching the shape of
 // time.Time.Equal so it can be used ergonomically in conditionals. Two

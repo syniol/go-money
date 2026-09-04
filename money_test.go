@@ -1005,3 +1005,40 @@ func TestMoneyError_NilReceiver(t *testing.T) {
 		t.Error("nil.Unwrap() should return nil")
 	}
 }
+
+func TestNeg(t *testing.T) {
+	pos := MustNew(1000, "USD")
+	neg, err := pos.Neg()
+	if err != nil || neg.Minor() != -1000 {
+		t.Errorf("Neg(1000 USD) = (%v, %v)", neg.Minor(), err)
+	}
+	roundTrip, err := neg.Neg()
+	if err != nil || roundTrip.Minor() != 1000 {
+		t.Errorf("Neg(-1000 USD) = (%v, %v)", roundTrip.Minor(), err)
+	}
+	min := MustNew(math.MinInt64, "USD")
+	if _, err := min.Neg(); !errors.Is(err, ErrOverflow) {
+		t.Errorf("Neg(MinInt64 USD) err = %v, want ErrOverflow", err)
+	}
+	var zero Money
+	got, err := zero.Neg()
+	if err != nil || got.Valid() {
+		t.Errorf("Neg(zero-value) = (%v, %v)", got, err)
+	}
+}
+
+func TestAbs(t *testing.T) {
+	neg := MustNew(-1000, "USD")
+	abs, err := neg.Abs()
+	if err != nil || abs.Minor() != 1000 {
+		t.Errorf("Abs(-1000 USD) = (%v, %v)", abs.Minor(), err)
+	}
+	pos := MustNew(1000, "USD")
+	if v, err := pos.Abs(); err != nil || v.Minor() != 1000 {
+		t.Errorf("Abs(1000 USD) unchanged = (%v, %v)", v.Minor(), err)
+	}
+	min := MustNew(math.MinInt64, "USD")
+	if _, err := min.Abs(); !errors.Is(err, ErrOverflow) {
+		t.Errorf("Abs(MinInt64 USD) err = %v, want ErrOverflow", err)
+	}
+}
