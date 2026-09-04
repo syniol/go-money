@@ -60,12 +60,13 @@ func (m Money) AsDecimalString() string {
 
 // String returns the currency symbol followed by the decimal string, or the
 // empty string for a zero-value Money so logs never quietly render "0"
-// without a currency.
+// without a currency. The nil check lives once, inside AsDecimalString.
 func (m Money) String() string {
-	if m.currency == nil {
+	dec := m.AsDecimalString()
+	if dec == "" {
 		return ""
 	}
-	return m.currency.symbol + m.AsDecimalString()
+	return m.currency.symbol + dec
 }
 
 // Format implements fmt.Formatter so %v, %s, %+v, %#v and %q print
