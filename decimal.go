@@ -34,7 +34,7 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	if !ok {
 		return Money{}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrInvalidCurrency}
 	}
-	multiplier := float64(getPow10(cfg.Decimals))
+	multiplier := float64(getPow10(cfg.decimals))
 	scaledValue := value * multiplier
 	// float64(math.MaxInt64) rounds up to 9.223372036854776e18 (one past
 	// MaxInt64) because MaxInt64 needs 63 bits and float64 only has 52 bits

@@ -6,27 +6,73 @@ import "fmt"
 // Instances are populated once by the code generator and shared by pointer;
 // callers must treat them as read-only.
 //
-// The MajorSingle, MajorPlural, MinorSingle and MinorPlural fields are
-// exposed as raw data. This package intentionally does not ship a plural
+// The MajorSingle, MajorPlural, MinorSingle and MinorPlural accessors expose
+// raw display forms. This package intentionally does not ship a plural
 // helper: correct pluralisation requires CLDR plural categories, which are
 // handled properly by golang.org/x/text/feature/plural. A single-condition
 // helper here would only be right for English and would mislead callers
 // into shipping it elsewhere.
+//
+// The fields are unexported so a downstream caller cannot mutate the shared
+// map values by accident. Read state via the accessor methods below.
 type Currency struct {
-	ISOCode      string
-	Name         string
-	Demonym      string
-	MajorSingle  string
-	MajorPlural  string
-	ISONum       int
-	Symbol       string
-	SymbolNative string
-	MinorSingle  string
-	MinorPlural  string
-	ISODigits    int
-	Decimals     int
-	NumToBasic   int
+	isoCode      string
+	name         string
+	demonym      string
+	majorSingle  string
+	majorPlural  string
+	isoNum       int
+	symbol       string
+	symbolNative string
+	minorSingle  string
+	minorPlural  string
+	isoDigits    int
+	decimals     int
+	numToBasic   int
 }
+
+// ISOCode returns the ISO 4217 three-letter code (e.g. "USD").
+func (c *Currency) ISOCode() string { return c.isoCode }
+
+// Name returns the human-readable currency name (e.g. "US Dollar").
+func (c *Currency) Name() string { return c.name }
+
+// Demonym returns the currency demonym (e.g. "American").
+func (c *Currency) Demonym() string { return c.demonym }
+
+// MajorSingle returns the singular name of the major unit (e.g. "dollar").
+func (c *Currency) MajorSingle() string { return c.majorSingle }
+
+// MajorPlural returns the plural name of the major unit (e.g. "dollars").
+func (c *Currency) MajorPlural() string { return c.majorPlural }
+
+// ISONum returns the ISO 4217 numeric code, or ISONumUnknown when the
+// upstream source has no numeric code. Use HasISONum to distinguish.
+func (c *Currency) ISONum() int { return c.isoNum }
+
+// Symbol returns the ASCII-safe currency symbol (e.g. "$").
+func (c *Currency) Symbol() string { return c.symbol }
+
+// SymbolNative returns the native-script symbol.
+func (c *Currency) SymbolNative() string { return c.symbolNative }
+
+// MinorSingle returns the singular name of the minor unit (e.g. "cent").
+func (c *Currency) MinorSingle() string { return c.minorSingle }
+
+// MinorPlural returns the plural name of the minor unit (e.g. "cents").
+func (c *Currency) MinorPlural() string { return c.minorPlural }
+
+// ISODigits returns the number of decimal digits per ISO 4217.
+func (c *Currency) ISODigits() int { return c.isoDigits }
+
+// Decimals returns the number of decimal places this library uses when
+// parsing and formatting amounts.
+func (c *Currency) Decimals() int { return c.decimals }
+
+// NumToBasic returns the conversion factor from minor to major unit, or
+// NumToBasicUnknown when the upstream source has no factor. Use
+// HasNumToBasic to distinguish.
+func (c *Currency) NumToBasic() int { return c.numToBasic }
 
 const (
 	// MaxSafeDecimals is the largest decimal precision that fits in int64
@@ -36,7 +82,7 @@ const (
 	// 19 decimal digits. Reserving 12 digits for the fractional part leaves
 	// 7 digits (up to 9999999) of major-unit headroom, which comfortably
 	// covers every real currency's practical range. Currencies with more
-	// than 12 decimal places are refused by validateScale.
+	// than 12 decimal places are rejected at package init.
 	MaxSafeDecimals = 12
 
 	// MaxStringLength caps NewFromString input to guarantee bounded parse
@@ -68,13 +114,13 @@ const (
 	NumToBasicUnknown = -2
 )
 
-// HasISONum reports whether Currency.ISONum holds a real ISO 4217 numeric
-// code rather than the ISONumUnknown sentinel.
-func (c *Currency) HasISONum() bool { return c.ISONum != ISONumUnknown }
+// HasISONum reports whether ISONum holds a real ISO 4217 numeric code
+// rather than the ISONumUnknown sentinel.
+func (c *Currency) HasISONum() bool { return c.isoNum != ISONumUnknown }
 
-// HasNumToBasic reports whether Currency.NumToBasic holds a real conversion
-// factor rather than the NumToBasicUnknown sentinel.
-func (c *Currency) HasNumToBasic() bool { return c.NumToBasic != NumToBasicUnknown }
+// HasNumToBasic reports whether NumToBasic holds a real conversion factor
+// rather than the NumToBasicUnknown sentinel.
+func (c *Currency) HasNumToBasic() bool { return c.numToBasic != NumToBasicUnknown }
 
 var pow10 = [...]int64{
 	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000,
@@ -93,10 +139,9 @@ func getPow10(n int) int64 {
 // of returning ErrUnsafeScale to every caller.
 func init() {
 	for _, c := range currencyConfig {
-		if c.Decimals > MaxSafeDecimals {
+		if c.decimals > MaxSafeDecimals {
 			panic(fmt.Sprintf("money: currency %s has Decimals=%d exceeding MaxSafeDecimals=%d",
-				c.ISOCode, c.Decimals, MaxSafeDecimals))
+				c.isoCode, c.decimals, MaxSafeDecimals))
 		}
 	}
 }
-

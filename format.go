@@ -18,7 +18,7 @@ func (m Money) AsDecimalString() string {
 	if m.currency == nil {
 		return ""
 	}
-	if m.currency.Decimals == 0 {
+	if m.currency.decimals == 0 {
 		return strconv.FormatInt(m.amount, 10)
 	}
 	val := m.amount
@@ -29,7 +29,7 @@ func (m Money) AsDecimalString() string {
 	} else {
 		uval = uint64(val)
 	}
-	decimals := m.currency.Decimals
+	decimals := m.currency.decimals
 	// |MaxInt64| is 19 digits, plus one '.' and one '-' sign gives 21 bytes.
 	// Buffer to 24 for a small safety margin.
 	var buf [24]byte
@@ -65,7 +65,7 @@ func (m Money) String() string {
 	if m.currency == nil {
 		return ""
 	}
-	return m.currency.Symbol + m.AsDecimalString()
+	return m.currency.symbol + m.AsDecimalString()
 }
 
 // SymbolStyle selects which currency form LocalisedString substitutes into
@@ -100,7 +100,7 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 		return ""
 	}
 	p := message.NewPrinter(tag)
-	cur, err := currency.ParseISO(m.currency.ISOCode)
+	cur, err := currency.ParseISO(m.currency.isoCode)
 	if err != nil {
 		return m.String()
 	}
@@ -108,7 +108,7 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 	if len(opts) > 0 {
 		style = opts[0]
 	}
-	numberStr := formatLocalisedNumber(p, m.amount, m.currency.Decimals)
+	numberStr := formatLocalisedNumber(p, m.amount, m.currency.decimals)
 	return applyCLDRTemplate(p, cur, m.currency, m.amount < 0, style, numberStr)
 }
 
@@ -164,9 +164,9 @@ func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, negat
 	default:
 		sampleTemplate = p.Sprint(currency.NarrowSymbol(amt))
 	}
-	samplePlaceholder := p.Sprintf("%.*f", c.Decimals, sampleAmount)
+	samplePlaceholder := p.Sprintf("%.*f", c.decimals, sampleAmount)
 	if strings.Count(sampleTemplate, samplePlaceholder) == 1 {
 		return strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
 	}
-	return c.Symbol + numberStr
+	return c.symbol + numberStr
 }

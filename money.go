@@ -63,7 +63,7 @@ func (m Money) Currency() string {
 	if m.currency == nil {
 		return ""
 	}
-	return m.currency.ISOCode
+	return m.currency.isoCode
 }
 
 // Valid reports whether m carries a currency. A zero-value Money returned by
@@ -93,7 +93,7 @@ func (m Money) assertSameCurrency(other Money) error {
 	if m.currency == nil || other.currency == nil {
 		return ErrCurrencyMismatch
 	}
-	if m.currency.ISOCode != other.currency.ISOCode {
+	if m.currency.isoCode != other.currency.isoCode {
 		return ErrCurrencyMismatch
 	}
 	return nil

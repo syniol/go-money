@@ -176,7 +176,7 @@ func TestJSON_Marshaling(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if m2.Minor() != 1050 || m2.currency.ISOCode != "USD" {
+	if m2.Minor() != 1050 || m2.currency.isoCode != "USD" {
 		t.Error("Unmarshal failed to reconstruct Money object")
 	}
 }
@@ -228,16 +228,16 @@ func TestCurrencyConfigs(t *testing.T) {
 	}
 
 	for code, cfg := range currencyConfig {
-		if cfg.ISOCode != code {
-			t.Errorf("currency %s has mismatched ISOCode: %s", code, cfg.ISOCode)
+		if cfg.isoCode != code {
+			t.Errorf("currency %s has mismatched ISOCode: %s", code, cfg.isoCode)
 		}
-		if cfg.Decimals < 0 || cfg.Decimals > MaxSafeDecimals {
-			t.Errorf("currency %s has invalid decimals: %d", code, cfg.Decimals)
+		if cfg.decimals < 0 || cfg.decimals > MaxSafeDecimals {
+			t.Errorf("currency %s has invalid decimals: %d", code, cfg.decimals)
 		}
-		if cfg.ISODigits < 0 {
-			t.Errorf("currency %s has negative ISODigits: %d", code, cfg.ISODigits)
+		if cfg.isoDigits < 0 {
+			t.Errorf("currency %s has negative ISODigits: %d", code, cfg.isoDigits)
 		}
-		if cfg.Name == "" {
+		if cfg.name == "" {
 			t.Errorf("currency %s has empty Name", code)
 		}
 	}
@@ -269,11 +269,11 @@ func TestSpecificISOCurrencies(t *testing.T) {
 			if !exists {
 				t.Fatalf("currency %s does not exist in configuration", tc.code)
 			}
-			if cfg.ISONum != tc.expectedNum {
-				t.Errorf("%s ISONum = %d, want %d", tc.code, cfg.ISONum, tc.expectedNum)
+			if cfg.isoNum != tc.expectedNum {
+				t.Errorf("%s ISONum = %d, want %d", tc.code, cfg.isoNum, tc.expectedNum)
 			}
-			if cfg.Decimals != tc.expectedDec {
-				t.Errorf("%s Decimals = %d, want %d", tc.code, cfg.Decimals, tc.expectedDec)
+			if cfg.decimals != tc.expectedDec {
+				t.Errorf("%s Decimals = %d, want %d", tc.code, cfg.decimals, tc.expectedDec)
 			}
 
 			m, err := NewFromString(tc.stringInput, tc.code)
@@ -764,20 +764,20 @@ func TestCurrency_HasISONum(t *testing.T) {
 	// Any dataset entry that HasISONum reports as unknown must equal the
 	// sentinel exactly; otherwise the generator lost a distinction.
 	for _, c := range currencyConfig {
-		if !c.HasISONum() && c.ISONum != ISONumUnknown {
-			t.Errorf("%s: HasISONum false but ISONum = %d, want ISONumUnknown", c.ISOCode, c.ISONum)
+		if !c.HasISONum() && c.isoNum != ISONumUnknown {
+			t.Errorf("%s: HasISONum false but ISONum = %d, want ISONumUnknown", c.isoCode, c.isoNum)
 		}
 	}
 	// Synthetic construction: guarantee the sentinel path is exercised even
 	// when the current generated dataset happens to have no nulls.
-	syntheticUnknown := &Currency{ISOCode: "XXX", ISONum: ISONumUnknown, NumToBasic: NumToBasicUnknown}
+	syntheticUnknown := &Currency{isoCode: "XXX", isoNum: ISONumUnknown, numToBasic: NumToBasicUnknown}
 	if syntheticUnknown.HasISONum() {
 		t.Error("synthetic Currency with ISONumUnknown reported HasISONum = true")
 	}
 	if syntheticUnknown.HasNumToBasic() {
 		t.Error("synthetic Currency with NumToBasicUnknown reported HasNumToBasic = true")
 	}
-	syntheticKnown := &Currency{ISOCode: "YYY", ISONum: 999, NumToBasic: 100}
+	syntheticKnown := &Currency{isoCode: "YYY", isoNum: 999, numToBasic: 100}
 	if !syntheticKnown.HasISONum() {
 		t.Error("synthetic Currency with real ISONum reported HasISONum = false")
 	}

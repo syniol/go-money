@@ -64,7 +64,7 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 		}
 	}
 
-	if len(fracPart) > cfg.Decimals {
+	if len(fracPart) > cfg.decimals {
 		return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrTooMuchDetail}
 	}
 
@@ -80,7 +80,7 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 			}
 			return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrInvalidFormat}
 		}
-		multiplier := getPow10(cfg.Decimals)
+		multiplier := getPow10(cfg.decimals)
 		if parsedInt > 0 && parsedInt > math.MaxInt64/multiplier {
 			return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrAmountTooLarge}
 		}
@@ -94,10 +94,10 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 
 	if fracPart != "" {
 		// ParseInt cannot fail here: the loop above rejected any non-digit
-		// rune, and len(fracPart) <= cfg.Decimals <= MaxSafeDecimals = 12,
+		// rune, and len(fracPart) <= cfg.decimals <= MaxSafeDecimals = 12,
 		// which always fits in int64.
 		parsedFrac, _ := strconv.ParseInt(fracPart, 10, 64)
-		fracMultiplier := getPow10(cfg.Decimals - len(fracPart))
+		fracMultiplier := getPow10(cfg.decimals - len(fracPart))
 		fractionalAmount := parsedFrac * fracMultiplier
 		if strings.HasPrefix(intPart, "-") {
 			if totalAmount < math.MinInt64+fractionalAmount {

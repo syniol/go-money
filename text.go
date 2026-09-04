@@ -10,7 +10,7 @@ func (m Money) MarshalText() ([]byte, error) {
 		return nil, &MoneyError{Op: "MarshalText", Err: ErrInvalidCurrency}
 	}
 	amount := m.AsDecimalString()
-	iso := m.currency.ISOCode
+	iso := m.currency.isoCode
 	buf := make([]byte, 0, len(amount)+1+len(iso))
 	buf = append(buf, amount...)
 	buf = append(buf, ' ')
