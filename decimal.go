@@ -41,7 +41,7 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	// of mantissa. Use >= so scaledValue == float64(math.MaxInt64) is
 	// rejected rather than fed to a spec-undefined int64 conversion.
 	if math.IsNaN(scaledValue) || math.IsInf(scaledValue, 0) || scaledValue >= float64(math.MaxInt64) || scaledValue <= float64(math.MinInt64) {
-		return Money{}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrAmountTooLarge}
+		return Money{amount: 0, currency: cfg}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrAmountTooLarge}
 	}
 	var rounded int64
 	switch mode {
@@ -54,7 +54,7 @@ func FromDecimal(value float64, currencyCode string, mode RoundingMode) (Money, 
 	case RoundUp:
 		rounded = int64(math.Ceil(scaledValue))
 	default:
-		return Money{}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrInvalidRoundingMode}
+		return Money{amount: 0, currency: cfg}, &MoneyError{Op: "FromDecimal", Amount: fmt.Sprintf("%.6f", value), Currency: currencyCode, Err: ErrInvalidRoundingMode}
 	}
 	return Money{amount: rounded, currency: cfg}, nil
 }

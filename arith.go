@@ -3,10 +3,12 @@ package money
 import "math"
 
 // Add returns the sum of two Money values of the same currency. It refuses
-// on currency mismatch or on int64 overflow.
+// on currency mismatch or on int64 overflow. On error the receiver's
+// currency is preserved in the returned Money so chained calls fail on the
+// original error rather than on a spurious ErrCurrencyMismatch.
 func (m Money) Add(other Money) (Money, error) {
 	if err := m.assertSameCurrency(other); err != nil {
-		return Money{}, &MoneyError{Op: "Add", Err: err}
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Add", Err: err}
 	}
 	if other.amount > 0 && m.amount > math.MaxInt64-other.amount {
 		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Add", Err: ErrOverflow}
@@ -18,9 +20,10 @@ func (m Money) Add(other Money) (Money, error) {
 }
 
 // Sub returns the difference of two Money values of the same currency.
+// On error the receiver's currency is preserved in the returned Money.
 func (m Money) Sub(other Money) (Money, error) {
 	if err := m.assertSameCurrency(other); err != nil {
-		return Money{}, &MoneyError{Op: "Sub", Err: err}
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Sub", Err: err}
 	}
 	if other.amount > 0 && m.amount < math.MinInt64+other.amount {
 		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Sub", Err: ErrOverflow}
@@ -102,7 +105,8 @@ func (m Money) Cmp(other Money) int {
 }
 
 // Compare returns -1, 0, or 1 for less than, equal, greater than. A
-// zero-value Money always fails to compare.
+// zero-value Money always fails to compare. The int result is undefined
+// when the returned error is non-nil.
 func (m Money) Compare(other Money) (int, error) {
 	if err := m.assertSameCurrency(other); err != nil {
 		return 0, &MoneyError{Op: "Compare", Err: err}
