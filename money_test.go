@@ -940,3 +940,20 @@ func TestFromDecimal_ZeroDecimalsCurrency(t *testing.T) {
 		})
 	}
 }
+
+// TestFromDecimal_FloatPrecisionTrap locks in the documented behaviour that
+// FromDecimal cannot represent every decimal exactly. 1.005 is stored as
+// 1.00499999... in IEEE-754, so RoundHalfAwayFromZero at USD scale rounds
+// down to 100 cents rather than the mathematically expected 101 cents.
+// This is the exact trap the WARNING doc mentions; changing this test is
+// a signal that the trap is no longer documented and callers may be
+// surprised.
+func TestFromDecimal_FloatPrecisionTrap(t *testing.T) {
+	got, err := FromDecimal(1.005, "USD", RoundHalfAwayFromZero)
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	if got.Minor() != 100 {
+		t.Errorf("Minor() = %d, want 100 (proving the float trap is real; use NewFromString for exact input)", got.Minor())
+	}
+}
