@@ -39,8 +39,12 @@ jobs:
 
     - name: Enforce coverage floor
       run: |
-        pct=$(go tool cover -func=coverage.out | awk '/^total:/ {print $3}' | tr -d '%')
-        awk -v p="$pct" 'BEGIN { if (p+0 < 80.0) { printf "coverage %.1f%% is below 80%% floor\n", p; exit 1 } else { printf "coverage %.1f%% meets 80%% floor\n", p } }'
+        # Exclude the code generator (build tool, not runtime code) from the
+        # floor so its 0% coverage does not drag the library number down.
+        # The first line is the "mode:" header; keep it verbatim.
+        awk 'NR == 1 || $0 !~ /^github\.com\/syniol\/go-money\/cmd\//' coverage.out > coverage.trimmed.out
+        pct=$(go tool cover -func=coverage.trimmed.out | awk '/^total:/ {print $3}' | tr -d '%')
+        awk -v p="$pct" 'BEGIN { if (p+0 < 85.0) { printf "coverage %.1f%% is below 85%% floor\n", p; exit 1 } else { printf "coverage %.1f%% meets 85%% floor\n", p } }'
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
