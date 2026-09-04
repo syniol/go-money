@@ -21,13 +21,14 @@ func (m Money) AsDecimalString() string {
 	if m.currency.decimals == 0 {
 		return strconv.FormatInt(m.amount, 10)
 	}
-	val := m.amount
-	isNeg := val < 0
-	var uval uint64
+	isNeg := m.amount < 0
+	// Two's complement absolute value: bitwise negate and add 1. This is
+	// the same instruction sequence as uint64(-m.amount) but does not rely
+	// on the reader knowing that Go's signed overflow at math.MinInt64
+	// wraps to the correct magnitude.
+	uval := uint64(m.amount)
 	if isNeg {
-		uval = uint64(-val)
-	} else {
-		uval = uint64(val)
+		uval = ^uval + 1
 	}
 	decimals := m.currency.decimals
 	// |MaxInt64| is 19 digits, plus one '.' and one '-' sign gives 21 bytes.
@@ -161,9 +162,11 @@ var fracFormats = func() [MaxSafeDecimals + 1]string {
 // prefixed with '-'.
 func formatLocalisedNumber(p *message.Printer, amount int64, decimals int) string {
 	isNeg := amount < 0
+	// Two's complement absolute value; see AsDecimalString for the
+	// rationale over uint64(-amount).
 	uval := uint64(amount)
 	if isNeg {
-		uval = uint64(-amount)
+		uval = ^uval + 1
 	}
 	var numberStr string
 	if decimals == 0 {
