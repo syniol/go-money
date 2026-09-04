@@ -31,11 +31,10 @@ func (m Money) Value() (driver.Value, error) {
 	if m.currency == nil {
 		return nil, &MoneyError{Op: "Value", Err: ErrInvalidCurrency}
 	}
-	txt, err := m.MarshalText()
-	if err != nil {
-		return nil, err
-	}
-	return string(txt), nil
+	// Return []byte rather than string to skip the second allocation of
+	// string(txt). driver.Value accepts both; every SQL driver we know
+	// of handles []byte for a TEXT/VARCHAR bind parameter.
+	return m.MarshalText()
 }
 
 // Scan implements database/sql.Scanner for the "<decimal> <ISO>" wire
