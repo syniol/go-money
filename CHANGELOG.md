@@ -8,6 +8,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- `Money.Value`, `Money.Scan` and `NullMoney` for `database/sql` round-trips into `TEXT`/`VARCHAR(24)` columns. Wire format is `"<decimal> <ISO>"`, matching `MarshalText`. Closes #16.
 - `GetCurrency(code)` and `Currencies()` for reachable Currency metadata without constructing a Money.
 - `Neg` and `Abs` methods on Money for sign helpers.
 - `Cmp(other) int` panicking comparison variant for `sort.Slice` adapters.
