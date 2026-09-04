@@ -13,7 +13,7 @@ func (m Money) MarshalJSON() ([]byte, error) {
 		return nil, &MoneyError{Op: "MarshalJSON", Err: ErrInvalidCurrency}
 	}
 	amount := m.AsDecimalString()
-	iso := m.currency.ISOCode
+	iso := m.currency.isoCode
 	buf := make([]byte, 0, len(amount)+len(iso)+26)
 	buf = append(buf, `{"amount":"`...)
 	buf = append(buf, amount...)
