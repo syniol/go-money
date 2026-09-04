@@ -995,3 +995,13 @@ func TestNewFromString_TrimBeforeLengthCap(t *testing.T) {
 		t.Errorf("65-space input err = %v, want ErrEmptyInput", err)
 	}
 }
+
+func TestMoneyError_NilReceiver(t *testing.T) {
+	var e *MoneyError
+	if got := e.Error(); got != "<nil>" {
+		t.Errorf("nil.Error() = %q, want %q", got, "<nil>")
+	}
+	if e.Unwrap() != nil {
+		t.Error("nil.Unwrap() should return nil")
+	}
+}
