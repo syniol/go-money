@@ -82,7 +82,8 @@ total, _ := m.Add(m)
 neg, _   := total.Neg()
 abs, _   := neg.Abs()
 
-// Comparison. Cmp panics on mismatch, use it in sort adapters.
+// Comparison. Cmp panics on mismatch; use it over homogeneous slices.
+prices := []money.Money{m, total, money.MustNew(2500, "USD")}
 sort.Slice(prices, func(i, j int) bool {
     return prices[i].Cmp(prices[j]) < 0
 })
@@ -93,7 +94,7 @@ data, _ := json.Marshal(m)
 // Text (YAML, TOML, URL params, flag.TextVar): "10.50 USD"
 txt, _ := m.MarshalText()
 
-fmt.Println(m, price, total, neg, abs, string(data), string(txt))
+fmt.Println(m, price, total, neg, abs, prices, string(data), string(txt))
 ```
 
 ## SQL columns
