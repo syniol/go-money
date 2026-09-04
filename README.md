@@ -1,144 +1,190 @@
-# 🏦 Go-Money: The High-Precision Banking Core
+# go-money
 
-![CI Status](https://github.com/syniol/go-money/actions/workflows/ci.yml/badge.svg?branch=main)
+Integer-backed monetary amounts for Go. `int64` minor units, overflow-safe arithmetic, fuzz-tested string parser, ISO 4217 metadata generated from the official source, JSON and text codecs, CLDR-aware localised display.
+
+[![CI](https://github.com/syniol/go-money/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/syniol/go-money/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/syniol/go-money.svg)](https://pkg.go.dev/github.com/syniol/go-money)
-[![License: BSD-3](https://img.shields.io/badge/License-BSD-blue.svg)](https://opensource.org/license/bsd-3-clause)
+[![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg)](https://opensource.org/license/bsd-3-clause)
 
-`go-money` is a mission-critical Go library designed for financial institutions and high-integrity fintech applications. 
-It treats money as a mathematical primitive; implementing strict value semantics, immutable operations, and stack-allocation 
-to ensure maximum performance and zero precision loss.
+## When to use this
 
-## 💎 The Golden Rules of Financial Engineering
+Pick `go-money` if you want:
 
-Most libraries fail by treating money as a generic data structure or, worse, a floating-point number. 
-`go-money` is built on three non-negotiable architectural pillars:
+- Exact arithmetic on monetary amounts without `float64` rounding.
+- Explicit overflow errors on every `Add`, `Sub`, `Mul` (no silent wrap).
+- Currency mismatch errors on every arithmetic operation.
+- A fuzz-tested, zero-allocation string parser for wire and user input.
+- A small dependency footprint: only `golang.org/x/text` is required, and only for locale-aware display.
 
-1.  **Zero Floating Point:** Absolute protection against IEEE-754 rounding errors. Money is stored as an `int64` representing the **minor unit** (e.g., $1.00 USD is `100`).
-2.  **Hardened Arithmetic:** Every addition, subtraction, and multiplication is guarded against silent integer overflows.
-3.  **Low GC Pressure:** The `Money` struct is a 16-byte value (int64 amount plus a shared `*Currency` pointer). Copies stay on the stack; the referenced `Currency` metadata is interned once at init and reused, so arithmetic and comparisons do not allocate.
+Pick something else if you need:
 
----
+- Arbitrary-precision decimals across the API today. See [`github.com/bojanz/currency`](https://github.com/bojanz/currency).
+- Amounts larger than `int64` can hold (some crypto). Track [issue #17](https://github.com/syniol/go-money/issues/17) for `BigMoney`.
+- Built-in currency conversion. Track [issue #18](https://github.com/syniol/go-money/issues/18).
+- SQL scanning. Track [issue #16](https://github.com/syniol/go-money/issues/16).
 
-## 🚀 Key Features
+## Feature comparison
 
-* **ISO-4217 Compliance:** Pre-generated support for 150+ global currencies.
-* **Zero-Allocation Parsing:** `NewFromString` performs manual byte-walking to parse inputs without intermediate string splits or heap allocations.
-* **Banker's Rounding:** Native support for `RoundHalfToEven` (the international standard for minimizing cumulative bias in financial sums).
-* **JSON Value Semantics:** Custom Marshallers that serialize amounts as strings (e.g., `"10.50"`) to maintain compatibility across JavaScript clients without precision loss.
+| | `go-money` | `Rhymond/go-money` | `bojanz/currency` |
+|---|---|---|---|
+| Backing type | int64 | int64 | decimal (arbitrary) |
+| Overflow-safe arithmetic | error | wraps silently | native (no overflow) |
+| String parser | fuzz-tested, zero-alloc | none (float only) | decimal-backed |
+| Currency mismatch guard | error | error | error |
+| Locale-aware display | CLDR via x/text | none | CLDR (native) |
+| `sql.Scanner`/`driver.Valuer` | tracked in #16 | no | yes |
+| FX conversion | tracked in #18 | single rate | no |
+| Fuzz tests | yes | no | some |
+| Big-integer amount | tracked in #17 | no | native |
 
----
+## Benchmarks
 
-## 🛠 Usage
+Selected results on Apple M2, Go 1.24.7. Full table and methodology in [BENCHMARK.md](BENCHMARK.md).
 
-### Initialization
+| Operation | `go-money` | Rhymond | bojanz |
+|---|---:|---:|---:|
+| Parse from string | **53 ns/op, 0 allocs** | 35 ns (float, lossy) | 93 ns, 1 alloc |
+| Add | **3 ns/op, 0 allocs** | 37 ns, 2 allocs | 23 ns, 0 allocs |
+| Mul | **1.9 ns/op, 0 allocs** | 36 ns, 2 allocs | 60 ns, 0 allocs |
+| MarshalJSON | **277 ns/op** | 326 ns | 380 ns |
+| UnmarshalJSON | **448 ns/op, 7 allocs** | 602 ns, 16 allocs | 838 ns, 13 allocs |
+
+Reproduce with `make bench-compare` or `cd benchmarks && go test -bench=. -benchmem`.
+
+## Install
+
+```sh
+go get github.com/syniol/go-money
+```
+
+## Quick start
+
 ```go
-import "github.com/syniol/go-money"
+import (
+    "encoding/json"
+    "fmt"
+    "sort"
 
-// Safe creation from minor units (cents)
-m, err := money.New(1050, "USD") // $10.50
+    "github.com/syniol/go-money"
+)
 
-// Hardened string parsing (Ideal for API inputs)
-price, err := money.NewFromString("1234.56", "EUR")
+// From minor units (cents).
+m, _ := money.New(1050, "USD")
 
-// MustNew panics on invalid input; use it only for package-level constants
-var DefaultFee = money.MustNew(500, "USD") // $5.00
+// From an ASCII decimal string (fuzz-tested, refuses non-ASCII digits).
+price, _ := money.NewFromString("1234.56", "EUR")
 
-// Look up currency metadata without constructing a Money value
+// Exact int64 arithmetic; errors on currency mismatch or overflow.
+total, _ := m.Add(m)
+neg, _   := total.Neg()
+abs, _   := neg.Abs()
+
+// Comparison. Cmp panics on mismatch, use it in sort adapters.
+sort.Slice(prices, func(i, j int) bool {
+    return prices[i].Cmp(prices[j]) < 0
+})
+
+// JSON: {"amount":"10.50","currency":"USD"}
+data, _ := json.Marshal(m)
+
+// Text (YAML, TOML, URL params, flag.TextVar): "10.50 USD"
+txt, _ := m.MarshalText()
+
+fmt.Println(m, price, total, neg, abs, string(data), string(txt))
+```
+
+## Currency metadata
+
+```go
 usd, ok := money.GetCurrency("USD")
 if ok {
-    fmt.Println(usd.Symbol(), usd.Decimals()) // $ 2
+    fmt.Println(usd.ISOCode(), usd.Symbol(), usd.Decimals())
+}
+
+for _, code := range money.Currencies() {
+    // 150+ codes generated from iso-4217.json
+    _ = code
 }
 ```
 
-### High-Integrity Arithmetic
+## Error handling
+
+Every failure returns a `*money.MoneyError` wrapping a sentinel error, comparable with `errors.Is`.
 
 ```go
-bal := money.MustNew(1000, "USD")
-fee := money.MustNew(200, "USD")
-
-// Arithmetic returns a new value; original remains immutable
-total, err := bal.Add(fee)
-if err != nil {
-    // Handles ErrCurrencyMismatch or ErrOverflow
-}
-
-// Comparison via Compare (returns int, error) or Cmp (panics on mismatch)
-cmp, _ := total.Compare(money.MustNew(100, "USD"))
-isWealthy := cmp > 0
-
-// Equal is a bool-returning shortcut, false on currency mismatch
-same := total.Equal(money.MustNew(1200, "USD"))
-_ = same
-
-// Sign helpers
-neg, _ := total.Neg()
-abs, _ := neg.Abs()
-_ = abs
-```
-
-### Text and JSON codecs
-
-```go
-// JSON: {"amount":"10.50","currency":"USD"}
-data, _ := json.Marshal(money.MustNew(1050, "USD"))
-
-// Text: "10.50 USD" for YAML, TOML, URL params, flag.TextVar
-text, _ := money.MustNew(1050, "USD").MarshalText()
-_ = data
-_ = text
-```
-
-### Advanced Rounding (The Banker's Way)
-When converting from decimals (like tax percentages), precision is paramount.
-```go
-// Calculate a 7.5% tax on $10.50
-tax, _ := money.FromDecimal(10.50 * 0.075, "USD", money.RoundHalfToEven)
-```
-
----
-
-## 🛡 Security & Safety
-
-### Overflow Protection
-A standard `int64` can hold up to $92 Quadrillion (in USD). However, even at this scale, 
-multiplication can cause overflows. `go-money` detects these boundaries:
-```go
-m := money.MustNew(math.MaxInt64, "USD")
-_, err := m.Add(money.MustNew(1, "USD")) 
-// Returns ErrOverflow instead of wrapping to a negative number.
-```
-
-### JSON Precision Guard
-When sending data to a browser, `JSON.parse()` will turn large numbers into floats, destroying 
-your data. `go-money` prevents this by forcing string serialization:
-
-```json
-{
-  "amount": "12500.00",
-  "currency": "USD"
+_, err := m.Add(eur)
+switch {
+case errors.Is(err, money.ErrCurrencyMismatch):
+    // ...
+case errors.Is(err, money.ErrOverflow):
+    // ...
 }
 ```
----
-## 📊 Performance Benchmarks
-`go-money` is optimized for zero-allocation paths. In a typical financial transaction lifecycle, 
-this library introduces **zero GC pressure**.
 
-| Operation     | Time      | Objects Allocated |
-|---------------|-----------|-------------------|
-| NewFromString | 42 ns/op  | 0 B/op            |
-| Add           | 1.2 ns/op | 0 B/op            |
-| MarshalJSON   | 85 ns/op  | 48 B/op           |
+Sentinels: `ErrInvalidCurrency`, `ErrInvalidFormat`, `ErrTooMuchDetail`, `ErrCurrencyMismatch`, `ErrOverflow`, `ErrAmountTooLarge`, `ErrInputTooLong`, `ErrEmptyInput`, `ErrMalformedInput`, `ErrInvalidSplitCount`, `ErrInvalidRoundingMode`, `ErrUnsafeScale`.
 
----
-## 📜 ISO-4217 Data
-Currency data is generated via `cmd/gen_currencies`. To update the local definitions with the 
-latest ISO standards:
-```shell
-go generate ./...
+## Localised display
+
+```go
+m := money.MustNew(123456789, "EUR")
+
+fmt.Println(m.LocalisedString(language.French))
+// "1 234 567,89 €"  (NBSP thousands separator preserved)
+
+fmt.Println(m.LocalisedString(language.AmericanEnglish, money.SymbolStyleISO))
+// "USD 1,234,567.89"
 ```
 
-## ⚖ License
-Distributed under the **BSD 3-Clause License**. See `LICENSE` for more information.
+`LocalisedString` is not zero-allocation (typically five to six small allocations per call for the CLDR template dance). Use `String()` for hot paths and `LocalisedString` for user-facing text.
 
----
-Built for the next generation of Fintech. Developed by [Syniol Limited](https://syniol.com).
+## Precision limits
+
+Amounts are stored as `int64` minor units. Practical maxima:
+
+| Currency decimals | Max representable amount |
+|---:|---|
+| 0 (JPY, KRW) | ±9.22 × 10^18 |
+| 2 (USD, EUR, GBP) | ±$92 quadrillion |
+| 4 (CLF) | ±$922 trillion |
+| 8 (crypto sats) | ±$92 billion |
+| 12 | ±$9 million |
+
+If you need larger amounts, track [issue #17](https://github.com/syniol/go-money/issues/17).
+
+## Development
+
+```sh
+git clone https://github.com/syniol/go-money && cd go-money
+go test ./...
+go test -race ./...
+go test -fuzz=FuzzNewFromString -fuzztime=30s
+make bench-compare
+```
+
+Every merge to `main` runs `go vet`, `staticcheck`, `govulncheck`, tests with race detector, an 85% coverage floor and a generator-drift check via GitHub Actions.
+
+## Project files
+
+- [CHANGELOG.md](CHANGELOG.md) release history in Keep-a-Changelog format
+- [BENCHMARK.md](BENCHMARK.md) reproducible comparison against Rhymond, bojanz, leekchan
+- [SECURITY.md](SECURITY.md) private vulnerability reporting workflow
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) Contributor Covenant 2.1
+- [CONTRIBUTING.md](CONTRIBUTING.md) how to build, test and submit changes
+
+## Data source
+
+Currency metadata is generated from `iso-4217.json` by `cmd/gen_currencies`. Regenerate with `go generate ./...`; CI fails on drift. See the [ISO 4217 standard](https://www.iso.org/iso-4217-currency-codes.html) for the upstream.
+
+## Roadmap
+
+Adoption-driving items are tracked as issues; contributions welcome on any of these:
+
+- [#16](https://github.com/syniol/go-money/issues/16) `sql.Scanner` and `driver.Valuer` for `database/sql`
+- [#17](https://github.com/syniol/go-money/issues/17) `BigMoney` backed by `big.Int`
+- [#18](https://github.com/syniol/go-money/issues/18) FX `Rate` and `Money.Convert`
+- [#15](https://github.com/syniol/go-money/issues/15) `shopspring/decimal` interop under a sub-package
+- [#19](https://github.com/syniol/go-money/issues/19) multi-currency `Wallet` type
+
+## Licence
+
+BSD 3-Clause. See [LICENSE](LICENSE).
