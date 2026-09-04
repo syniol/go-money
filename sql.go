@@ -74,6 +74,13 @@ type NullMoney struct {
 // Scan implements database/sql.Scanner for NullMoney. A NULL source
 // leaves Valid == false and Money as its zero value; any other input
 // delegates to Money.Scan.
+//
+// On error, Scan sets Valid to false and returns the underlying
+// MoneyError, but does not zero nm.Money: the receiver retains whatever
+// value it held before the call. This matches database/sql.NullString,
+// which similarly leaves NullString.String untouched on failure. A
+// caller reusing a NullMoney across rows in a loop should check err
+// before reading nm.Money.
 func (nm *NullMoney) Scan(src any) error {
 	if src == nil {
 		nm.Money = Money{}
