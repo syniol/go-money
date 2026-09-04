@@ -3,6 +3,7 @@ package money
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -1040,5 +1041,28 @@ func TestAbs(t *testing.T) {
 	min := MustNew(math.MinInt64, "USD")
 	if _, err := min.Abs(); !errors.Is(err, ErrOverflow) {
 		t.Errorf("Abs(MinInt64 USD) err = %v, want ErrOverflow", err)
+	}
+}
+
+func TestFormat_Verbs(t *testing.T) {
+	m := MustNew(1050, "USD")
+	tests := []struct {
+		format string
+		want   string
+	}{
+		{"%s", "$10.50"},
+		{"%v", "$10.50"},
+		{"%+v", "money.Money{amount:1050 currency:USD}"},
+		{"%#v", "money.Money{amount:1050 currency:USD}"},
+		{"%q", "\"$10.50\""},
+	}
+	for _, tt := range tests {
+		got := fmt.Sprintf(tt.format, m)
+		if got != tt.want {
+			t.Errorf("Sprintf(%q, m) = %q, want %q", tt.format, got, tt.want)
+		}
+	}
+	if got := fmt.Sprintf("%d", m); !strings.Contains(got, "money.Money=") {
+		t.Errorf("unknown verb fallback = %q, want to contain money.Money=", got)
 	}
 }
