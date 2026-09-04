@@ -9,10 +9,10 @@ func (m Money) Add(other Money) (Money, error) {
 		return Money{}, &MoneyError{Op: "Add", Err: err}
 	}
 	if other.amount > 0 && m.amount > math.MaxInt64-other.amount {
-		return Money{}, &MoneyError{Op: "Add", Err: ErrOverflow}
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Add", Err: ErrOverflow}
 	}
 	if other.amount < 0 && m.amount < math.MinInt64-other.amount {
-		return Money{}, &MoneyError{Op: "Add", Err: ErrOverflow}
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Add", Err: ErrOverflow}
 	}
 	return Money{amount: m.amount + other.amount, currency: m.currency}, nil
 }
@@ -23,10 +23,10 @@ func (m Money) Sub(other Money) (Money, error) {
 		return Money{}, &MoneyError{Op: "Sub", Err: err}
 	}
 	if other.amount > 0 && m.amount < math.MinInt64+other.amount {
-		return Money{}, &MoneyError{Op: "Sub", Err: ErrOverflow}
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Sub", Err: ErrOverflow}
 	}
 	if other.amount < 0 && m.amount > math.MaxInt64+other.amount {
-		return Money{}, &MoneyError{Op: "Sub", Err: ErrOverflow}
+		return Money{amount: 0, currency: m.currency}, &MoneyError{Op: "Sub", Err: ErrOverflow}
 	}
 	return Money{amount: m.amount - other.amount, currency: m.currency}, nil
 }
