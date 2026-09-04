@@ -2,6 +2,7 @@ package money
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // MarshalJSON emits {"amount":"<decimal>","currency":"<ISO>"} so JavaScript
@@ -30,7 +31,10 @@ func (m *Money) UnmarshalJSON(data []byte) error {
 		Currency string `json:"currency"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		return &MoneyError{Op: "UnmarshalJSON", Err: ErrMalformedInput}
+		// Preserve the underlying json error so operators debugging bad
+		// payloads see the actual parse failure, while callers can still
+		// match ErrMalformedInput via errors.Is.
+		return &MoneyError{Op: "UnmarshalJSON", Err: fmt.Errorf("%w: %w", ErrMalformedInput, err)}
 	}
 	if aux.Amount == "" || aux.Currency == "" {
 		return &MoneyError{Op: "UnmarshalJSON", Amount: aux.Amount, Currency: aux.Currency, Err: ErrEmptyInput}
