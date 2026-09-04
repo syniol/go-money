@@ -99,6 +99,37 @@ jobs:
           version: latest
           args: --timeout=5m --out-format=colored-line-number
 
+  sql-integration:
+    name: SQL Integration
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.24.x
+
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-sqltest-${{ hashFiles('sqltest/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-sqltest-
+
+    - name: Download deps
+      working-directory: sqltest
+      run: go mod download
+
+    - name: Run SQLite integration tests
+      working-directory: sqltest
+      run: go test -race ./...
+
   build:
     name: Build
     runs-on: ubuntu-latest
