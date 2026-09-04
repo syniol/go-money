@@ -142,7 +142,7 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 		style = opts[0]
 	}
 	numberStr := formatLocalisedNumber(p, m.amount, m.currency.decimals)
-	return applyCLDRTemplate(p, cur, m.currency, false, style, numberStr)
+	return applyCLDRTemplate(p, cur, m.currency, style, numberStr)
 }
 
 // fracFormats holds pre-computed "%0Nd" format strings for every supported
@@ -197,7 +197,7 @@ func formatLocalisedNumber(p *message.Printer, amount int64, decimals int) strin
 // collide with template literals such as "1" or "1.00" that appear in some
 // exotic CLDR patterns, and it keeps the negative-sign handling in
 // formatLocalisedNumber where it belongs.
-func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, _ bool, style SymbolStyle, numberStr string) string {
+func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, style SymbolStyle, numberStr string) string {
 	zero := cur.Amount(0.0)
 	var probe string
 	switch style {
