@@ -7,6 +7,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Community and documentation files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `BENCHMARK.md`) moved to `docs/`. GitHub Community Standards side-panel entries stay detected via `docs/`.
+- `iso-4217.json` moved into `cmd/gen_currencies/` and embedded at build time via `//go:embed`. The generator is now independent of the working directory it is invoked from.
+- `CONTRIBUTING.md` rewritten to match the README register (drop marketing prose and H2 emojis), point at per-concern test files and align coverage guidance with the CI 85% floor.
+- Quick start snippet in README declares `prices` so it compiles as-is.
+
 ### Added
 - `Money.Value`, `Money.Scan` and `NullMoney` for `database/sql` round-trips into `TEXT`/`VARCHAR(24)` columns. Wire format is `"<decimal> <ISO>"`, matching `MarshalText`. Closes #16.
 - `GetCurrency(code)` and `Currencies()` for reachable Currency metadata without constructing a Money.
