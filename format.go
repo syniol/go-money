@@ -149,13 +149,13 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 // fracFormats holds pre-computed "%0Nd" format strings for every supported
 // decimal precision. Building these once at init removes a nested
 // fmt.Sprintf from every LocalisedString call.
-var fracFormats = func() [MaxSafeDecimals + 1]string {
-	var out [MaxSafeDecimals + 1]string
-	for i := range out {
-		out[i] = fmt.Sprintf("%%0%dd", i)
+var fracFormats [MaxSafeDecimals + 1]string
+
+func init() {
+	for i := range fracFormats {
+		fracFormats[i] = fmt.Sprintf("%%0%dd", i)
 	}
-	return out
-}()
+}
 
 // formatLocalisedNumber returns the amount rendered with the locale's
 // decimal separator, without a currency symbol. Negative amounts are
