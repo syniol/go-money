@@ -1066,3 +1066,10 @@ func TestFormat_Verbs(t *testing.T) {
 		t.Errorf("unknown verb fallback = %q, want to contain money.Money=", got)
 	}
 }
+
+func TestMoneyError_EmptyOpDefault(t *testing.T) {
+	e := &MoneyError{Err: errors.New("boom")}
+	if got := e.Error(); got != "money.?: boom" {
+		t.Errorf("Error() with empty Op = %q, want %q", got, "money.?: boom")
+	}
+}

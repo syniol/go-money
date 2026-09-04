@@ -34,13 +34,17 @@ func (e *MoneyError) Error() string {
 	if e == nil {
 		return "<nil>"
 	}
+	op := e.Op
+	if op == "" {
+		op = "?"
+	}
 	if e.Amount != "" && e.Currency != "" {
-		return fmt.Sprintf("money.%s(%s, %s): %v", e.Op, e.Amount, e.Currency, e.Err)
+		return fmt.Sprintf("money.%s(%s, %s): %v", op, e.Amount, e.Currency, e.Err)
 	}
 	if e.Amount != "" {
-		return fmt.Sprintf("money.%s(%s): %v", e.Op, e.Amount, e.Err)
+		return fmt.Sprintf("money.%s(%s): %v", op, e.Amount, e.Err)
 	}
-	return fmt.Sprintf("money.%s: %v", e.Op, e.Err)
+	return fmt.Sprintf("money.%s: %v", op, e.Err)
 }
 
 func (e *MoneyError) Unwrap() error {
