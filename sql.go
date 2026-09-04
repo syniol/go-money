@@ -1,8 +1,18 @@
 package money
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
+)
+
+// Compile-time assertions that Money and NullMoney satisfy the
+// database/sql interfaces.
+var (
+	_ driver.Valuer = Money{}
+	_ driver.Valuer = NullMoney{}
+	_ sql.Scanner   = (*Money)(nil)
+	_ sql.Scanner   = (*NullMoney)(nil)
 )
 
 // Value implements database/sql/driver.Valuer, emitting the Money as
@@ -41,6 +51,11 @@ func (m *Money) Scan(src any) error {
 		data = []byte(v)
 	case []byte:
 		data = v
+	case sql.RawBytes:
+		// sql.RawBytes is a distinct named type from []byte; Go type
+		// switches match by identity, not underlying type. Some drivers
+		// hand this back to a Scanner directly.
+		data = []byte(v)
 	default:
 		return &MoneyError{Op: "Scan", Err: fmt.Errorf("%w: unsupported source type %T", ErrMalformedInput, src)}
 	}

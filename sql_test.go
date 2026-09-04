@@ -1,7 +1,7 @@
 package money
 
 import (
-	"database/sql/driver"
+	"database/sql"
 	"errors"
 	"testing"
 )
@@ -167,11 +167,15 @@ func TestNullMoney_ValueRoundTrip(t *testing.T) {
 	}
 }
 
-// Compile-time assertions that Money and NullMoney satisfy the
-// database/sql/driver interfaces.
-var (
-	_ driver.Valuer = Money{}
-	_ driver.Valuer = NullMoney{}
-	_               = (&Money{}).Scan
-	_               = (&NullMoney{}).Scan
-)
+func TestScan_FromRawBytes(t *testing.T) {
+	// sql.RawBytes is a distinct named type from []byte; some drivers
+	// return it directly to a Scanner. The switch in Money.Scan must
+	// handle it or the value falls through to ErrMalformedInput.
+	var m Money
+	if err := m.Scan(sql.RawBytes("77.00 CHF")); err != nil {
+		t.Fatalf("Scan(sql.RawBytes) err = %v", err)
+	}
+	if m.Minor() != 7700 || m.Currency() != "CHF" {
+		t.Errorf("Scan(sql.RawBytes) produced %v, want 7700 CHF", m)
+	}
+}
