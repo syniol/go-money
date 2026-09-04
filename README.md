@@ -207,6 +207,7 @@ Every merge to `main` runs `go vet`, `staticcheck`, `govulncheck`, tests with ra
 ## Project files
 
 - [CHANGELOG.md](CHANGELOG.md) release history in Keep-a-Changelog format
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) how the library is built, why, and how the pipelines flow
 - [docs/BENCHMARK.md](docs/BENCHMARK.md) reproducible comparison against Rhymond, bojanz, leekchan
 - [docs/SECURITY.md](docs/SECURITY.md) private vulnerability reporting workflow
 - [docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md) Contributor Covenant 2.1

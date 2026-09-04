@@ -9,6 +9,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 - Release automation via `.github/workflows/release.yml`: pushing a `vX.Y.Z` tag from `main` runs verification (vet, race tests, SQL integration, go-generate drift), builds a source archive with SHA-256 and SPDX SBOM, generates a GitHub build-provenance attestation, and publishes a GitHub Release with auto-generated notes.
+- `docs/ARCHITECTURE.md` describing the type system, arithmetic and parser design, codec surfaces, localisation approach, currency data pipeline, error taxonomy, testing strategy, and the CI/bench/release workflows.
 
 ### Changed
 - Community and documentation files (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `BENCHMARK.md`) moved to `docs/`. GitHub Community Standards side-panel entries stay detected via `docs/`.
