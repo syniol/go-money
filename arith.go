@@ -89,6 +89,18 @@ func (m Money) Split(n int) ([]Money, error) {
 	return results, nil
 }
 
+// Cmp returns -1, 0, or 1 for less than, equal, greater than. It panics on
+// currency mismatch, matching the shape of bytes.Compare and big.Int.Cmp so
+// it can be used directly as a sort.Slice adapter. Callers that cannot
+// guarantee same-currency inputs should use Compare instead.
+func (m Money) Cmp(other Money) int {
+	n, err := m.Compare(other)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
 // Compare returns -1, 0, or 1 for less than, equal, greater than. A
 // zero-value Money always fails to compare.
 func (m Money) Compare(other Money) (int, error) {
