@@ -65,6 +65,11 @@ func (m Money) Currency() string {
 	return m.currency.ISOCode
 }
 
+// Valid reports whether m carries a currency. A zero-value Money returned by
+// a failing constructor is not valid and every method that requires a
+// currency will refuse it. Prefer Valid over comparing Currency() to "".
+func (m Money) Valid() bool { return m.currency != nil }
+
 // IsZero reports whether the amount is exactly zero.
 func (m Money) IsZero() bool { return m.amount == 0 }
 

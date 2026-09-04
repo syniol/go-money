@@ -874,3 +874,13 @@ func TestCmp_ReturnsCompareOrder(t *testing.T) {
 		t.Error("Cmp ordering wrong")
 	}
 }
+
+func TestMoney_Valid(t *testing.T) {
+	var zero Money
+	if zero.Valid() {
+		t.Error("zero-value Money.Valid() = true, want false")
+	}
+	if !MustNew(0, "USD").Valid() {
+		t.Error("USD zero amount .Valid() = false, want true")
+	}
+}
