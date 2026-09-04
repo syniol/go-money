@@ -69,12 +69,23 @@ func TestScan_UnsupportedTypeReturnsErrMalformedInput(t *testing.T) {
 }
 
 func TestScan_MalformedTextReturnsError(t *testing.T) {
-	var m Money
-	if err := m.Scan("garbage"); err == nil {
-		t.Error("garbage Scan returned nil error")
+	tests := []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{"no space", "10.50", ErrMalformedInput},
+		{"single token", "garbage", ErrMalformedInput},
+		{"unknown currency after cut", "1.00 AAA", ErrInvalidCurrency},
 	}
-	if err := m.Scan("10.50"); !errors.Is(err, ErrMalformedInput) {
-		t.Errorf("no-space Scan err = %v, want ErrMalformedInput", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var m Money
+			err := m.Scan(tt.input)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("Scan(%q) err = %v, want %v", tt.input, err, tt.wantErr)
+			}
+		})
 	}
 }
 
