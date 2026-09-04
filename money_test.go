@@ -987,3 +987,11 @@ func TestMoneyError_Format(t *testing.T) {
 		})
 	}
 }
+
+func TestNewFromString_TrimBeforeLengthCap(t *testing.T) {
+	// 65 spaces should be classified as empty (trimmed to ""), not TooLong.
+	_, err := NewFromString(strings.Repeat(" ", 65), "USD")
+	if !errors.Is(err, ErrEmptyInput) {
+		t.Errorf("65-space input err = %v, want ErrEmptyInput", err)
+	}
+}
