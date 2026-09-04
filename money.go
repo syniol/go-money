@@ -84,11 +84,11 @@ func (m Money) IsPositive() bool { return m.currency != nil && m.amount > 0 }
 // Returns false for a zero-value Money without a currency.
 func (m Money) IsNegative() bool { return m.currency != nil && m.amount < 0 }
 
-// assertSameCurrency compares by ISOCode rather than pointer identity so that
-// a test double or a caller who legitimately constructs a *Currency outside
-// the package-level currencyConfig map is not treated as a mismatch. Pointer
-// identity would be faster but depends on developer discipline that the
-// exported Currency type cannot enforce.
+// assertSameCurrency compares by ISOCode rather than pointer identity so
+// that a Currency handed back through a future accessor and re-used
+// alongside a map-interned instance still compares equal. Pointer identity
+// would be faster but every external *Currency reference has to survive
+// re-entry through the package without being flagged as a mismatch.
 func (m Money) assertSameCurrency(other Money) error {
 	if m.currency == nil || other.currency == nil {
 		return ErrCurrencyMismatch
