@@ -855,3 +855,22 @@ func FuzzUnmarshalJSON(f *testing.F) {
 		}
 	})
 }
+
+func TestCmp_PanicsOnMismatch(t *testing.T) {
+	usd := MustNew(100, "USD")
+	eur := MustNew(100, "EUR")
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Cmp with mismatched currencies should panic")
+		}
+	}()
+	_ = usd.Cmp(eur)
+}
+
+func TestCmp_ReturnsCompareOrder(t *testing.T) {
+	a := MustNew(100, "USD")
+	b := MustNew(200, "USD")
+	if a.Cmp(b) != -1 || b.Cmp(a) != 1 || a.Cmp(a) != 0 {
+		t.Error("Cmp ordering wrong")
+	}
+}
