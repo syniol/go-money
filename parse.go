@@ -23,15 +23,17 @@ func NewFromString(value string, currencyCode string) (Money, error) {
 	if len(value) == 0 {
 		return Money{}, &MoneyError{Op: "NewFromString", Currency: currencyCode, Err: ErrEmptyInput}
 	}
-	if len(value) > MaxStringLength {
-		return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrInputTooLong}
-	}
 
 	value = strings.TrimSpace(value)
 	if value == "" {
 		// An all-whitespace input became empty after trimming; classify it
-		// as empty rather than as a bad format.
+		// as empty rather than too long or bad format.
 		return Money{}, &MoneyError{Op: "NewFromString", Currency: currencyCode, Err: ErrEmptyInput}
+	}
+	if len(value) > MaxStringLength {
+		// Enforce the length cap on the trimmed value so a padded 65-space
+		// input is classified as empty, not too long.
+		return Money{}, &MoneyError{Op: "NewFromString", Amount: value, Currency: currencyCode, Err: ErrInputTooLong}
 	}
 	switch value {
 	case ".", "-", "-.":
