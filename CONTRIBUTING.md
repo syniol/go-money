@@ -1,73 +1,68 @@
-# Contributing to Go-Money
+# Contributing
 
-Thank you for your interest in contributing to `go-money`. Because this library is designed for financial institutions and banking cores, we maintain a higher bar for contributions than typical open-source projects.
+Thanks for looking. `go-money` aims to be the safe money type for Go: exact int64 arithmetic, overflow guards on every hot path, fuzz-tested parsers, no float64 in the core. Contributions that preserve those properties are welcome.
 
-Accuracy, precision, and performance are our primary metrics.
+## Ground rules
 
----
+Before you open a PR, please:
 
-## 🏗 Architectural Philosophy
+1. **Preserve immutability.** `Money` is a value type. Methods return a new `Money`; they never mutate the receiver.
+2. **Guard every arithmetic path against int64 overflow.** Silent wrap-around is treated as a critical bug.
+3. **Keep float64 out of the core.** `FromDecimal` is the one documented entry point that touches float, and its precision caveats are called out in the doc. Do not add new code paths that depend on float arithmetic for correctness.
+4. **Match the existing test layout.** Tests live in per-concern files: `arith_test.go`, `parse_test.go`, `format_test.go`, `json_test.go`, `text_test.go`, `sql_test.go`, `currency_test.go`, `decimal_test.go`, `errors_test.go`, `predicates_test.go`, `money_test.go`. Add new tests to the file whose subject matches the change; do not resurrect a single `money_test.go`.
 
-Before submitting a Pull Request, please ensure your changes adhere to our core architectural guardrails:
+## Regenerating currency data
 
-1.  **Immutability:** The `Money` struct must remain a value object. Methods should return a new `Money` instance rather than modifying the receiver.
-2.  **Stack Allocation:** Avoid any logic that forces the `Money` struct to escape to the heap. We aim for zero-allocation in the "hot paths" (arithmetic and parsing).
-3.  **Overflow Safety:** All arithmetic operations must be explicitly checked against `math.MaxInt64`. Silent wrap-around is a critical failure.
-4.  **No Floating Point:** Under no circumstances should `float64` be used for internal storage or intermediate arithmetic logic.
+`currencies.gen.go` is generated from `cmd/gen_currencies/iso-4217.json` by `cmd/gen_currencies/main.go`. Do not edit the generated file by hand.
 
----
-
-## 📜 Currency Data & Generation
-
-We do not manually edit `currencies.gen.go`. This file is a static representation of the ISO-4217 standard derived from our JSON source.
-
-If you need to update currency definitions:
-1.  Update the source data in `iso-4217.json`.
-2.  Run the generator:
-    ```bash
-    go generate ./...
-    ```
-3.  Ensure the generator logic in `cmd/gen_currencies/main.go` remains deterministic (e.g., keeping map keys sorted) to prevent noisy diffs.
-
----
-
-## 🧪 Testing Standards
-
-We require 100% code coverage for all public methods. Your PR will not be merged without:
-
-### 1. Unit Tests
-Every new feature must include table-driven tests in `money_test.go` covering:
-* Positive and negative values.
-* Zero-decimal currencies (e.g., JPY).
-* Multi-decimal currencies (e.g., KWD).
-* Edge cases (max/min `int64`).
-
-### 2. Fuzz Testing
-If you modify the parser (`NewFromString`), you **must** run the fuzzer to ensure no input can cause a panic:
-```bash
-go test -fuzz=FuzzNewFromString
+```sh
+go generate ./...
 ```
 
-### 3. Benchmarking
-If you modify arithmetic or parsing logic, provide benchmark results to ensure we haven't introduced regressions 
-in latency or allocations:
+CI fails on drift, so any change to the JSON must be paired with a regenerated `currencies.gen.go` in the same PR.
 
-```bash
-go test -bench=. -benchmem
+## Tests
+
+CI enforces:
+
+- `go vet ./...` clean
+- `staticcheck ./...` clean
+- `govulncheck ./...` clean
+- `go test -race ./...` pass
+- 85% coverage floor on the root module (the `cmd/` generator is excluded)
+- `go generate ./...` drift check
+- SQL integration tests in `sqltest/` pass against an in-memory SQLite driver
+
+Locally:
+
+```sh
+go test ./...
+go test -race ./...
+go test -fuzz=FuzzNewFromString -fuzztime=30s
+cd sqltest && go test ./...
 ```
 
----
+### Fuzz new parsers
 
-## 🚀 Pull Request Process
- * **1. Issue First:** For significant changes, please open an issue to discuss the architectural impact before writing code.
+If your change touches `NewFromString`, `UnmarshalText`, `UnmarshalJSON` or `Money.Scan`, run the relevant fuzz target for at least 30 seconds and paste the summary line into the PR description. Fuzz targets live in `parse_test.go` (`FuzzNewFromString`) and `json_test.go` (`FuzzUnmarshalJSON`).
 
- * **2. Linting:** Ensure your code passes golangci-lint.
+### Benchmarks
 
- * **3. Commit Messages:** Use descriptive, imperative commit messages (e.g., feat: add support for custom rounding modes).
+Cross-library benchmarks against `Rhymond/go-money`, `bojanz/currency` and `leekchan/accounting` live in `benchmarks/`. If your change touches an arithmetic, parsing, format or codec path, include before/after numbers in the PR:
 
- * **4. Documentation:** Update README.md or example_test.go if you are adding new public-facing functionality.
+```sh
+make bench-compare
+```
 
----
+Update `docs/BENCHMARK.md` if the headline table shifts materially.
 
-## ⚖️ License
-By contributing to this repository, you agree that your contributions will be licensed under the project's **BSD 3-Clause License**.
+## PR process
+
+1. **Open an issue first for anything non-trivial.** Design decisions land better in a discussion than in a PR review.
+2. **Follow Conventional Commits** for commit subjects (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `perf:`, `chore:`, `ci:`, `build:`, `style:`, `revert:`). Total subject length under 110 characters. Breaking changes get `!` in the type.
+3. **Update `README.md` and add an entry to `docs/BENCHMARK.md` or `CHANGELOG.md`** when the change is user-visible.
+4. **Prefer small, focused PRs.** One concern per PR; if a PR grows past ~500 lines of net change, consider splitting.
+
+## Licence
+
+By contributing you agree that your work is licensed under this project's [BSD 3-Clause Licence](../LICENSE).
