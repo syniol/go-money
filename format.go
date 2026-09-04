@@ -200,6 +200,12 @@ func formatLocalisedNumber(p *message.Printer, amount int64, decimals int) strin
 // collide with template literals such as "1" or "1.00" that appear in some
 // exotic CLDR patterns, and it keeps the negative-sign handling in
 // formatLocalisedNumber where it belongs.
+//
+// Fallback: if a locale ever renders zero specially (say, as a literal
+// "free") the LastIndex probe cannot find the numeric slot; we return
+// c.symbol + numberStr so the caller still gets a non-empty rendering,
+// at the cost of losing the locale's symbol placement. None of the
+// currently supported locales exercises this path.
 func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, style SymbolStyle, numberStr string) string {
 	zero := cur.Amount(0.0)
 	var probe string
