@@ -67,11 +67,28 @@ func (m Money) String() string {
 	return m.currency.Symbol + m.AsDecimalString()
 }
 
+// SymbolStyle selects which currency form LocalisedString substitutes into
+// the CLDR template. Passing no option defaults to SymbolStyleNarrow to
+// preserve the historical output.
+type SymbolStyle int
+
+const (
+	// SymbolStyleNarrow uses the shortest locale-appropriate symbol
+	// (e.g. "$" for USD everywhere).
+	SymbolStyleNarrow SymbolStyle = iota
+	// SymbolStyleStandard uses the standard locale symbol
+	// (e.g. "US$" for USD in some locales).
+	SymbolStyleStandard
+	// SymbolStyleISO uses the ISO 4217 code (e.g. "USD 1,234.56").
+	SymbolStyleISO
+)
+
 // LocalisedString renders the amount using CLDR conventions for the given
 // language tag, preserving exact digits without going through float64.
 // NBSP and other non-breaking spaces produced by CLDR are preserved: they are
 // legitimate thousands separators in French, Russian, Swedish and others.
-func (m Money) LocalisedString(tag language.Tag) string {
+// Pass a SymbolStyle to change which currency form is used.
+func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 	if m.currency == nil {
 		return ""
 	}
@@ -111,7 +128,20 @@ func (m Money) LocalisedString(tag language.Tag) string {
 	if isNeg {
 		sampleAmount = -1.0
 	}
-	sampleTemplate := p.Sprint(currency.NarrowSymbol(cur.Amount(sampleAmount)))
+	style := SymbolStyleNarrow
+	if len(opts) > 0 {
+		style = opts[0]
+	}
+	amt := cur.Amount(sampleAmount)
+	var sampleTemplate string
+	switch style {
+	case SymbolStyleStandard:
+		sampleTemplate = p.Sprint(amt)
+	case SymbolStyleISO:
+		sampleTemplate = p.Sprint(currency.ISO(amt))
+	default:
+		sampleTemplate = p.Sprint(currency.NarrowSymbol(amt))
+	}
 	samplePlaceholder := p.Sprintf("%.*f", m.currency.Decimals, sampleAmount)
 	// Only substitute when the placeholder appears exactly once. A second
 	// occurrence would mean the placeholder collides with a literal in the

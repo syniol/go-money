@@ -891,3 +891,15 @@ func TestFromDecimal_UnknownMode(t *testing.T) {
 		t.Errorf("err = %v, want ErrInvalidRoundingMode", err)
 	}
 }
+
+func TestLocalisedString_SymbolStyle(t *testing.T) {
+	m := MustNew(123456, "USD")
+	iso := m.LocalisedString(language.AmericanEnglish, SymbolStyleISO)
+	if !strings.Contains(iso, "USD") {
+		t.Errorf("SymbolStyleISO output %q missing USD", iso)
+	}
+	narrow := m.LocalisedString(language.AmericanEnglish, SymbolStyleNarrow)
+	if !strings.Contains(narrow, "$") {
+		t.Errorf("SymbolStyleNarrow output %q missing $", narrow)
+	}
+}
