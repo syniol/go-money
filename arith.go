@@ -68,6 +68,11 @@ func (m Money) Mul(multiplier int64) (Money, error) {
 // Split divides the amount into n parts of equal magnitude, distributing any
 // remainder one minor unit at a time to the first parts so the sum equals the
 // original amount exactly.
+//
+// Performance: Split allocates a fresh []Money of length n on every call.
+// Callers that split millions of times in a hot loop should batch or
+// pre-allocate at the call site; the library does not pool the result
+// because the returned slice's ownership passes to the caller.
 func (m Money) Split(n int) ([]Money, error) {
 	if n <= 0 || n > MaxSplitParts {
 		return nil, &MoneyError{Op: "Split", Err: ErrInvalidSplitCount}
