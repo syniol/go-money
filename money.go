@@ -41,6 +41,10 @@ func New(minorAmount int64, currencyCode string) (Money, error) {
 
 // MustNew is the panicking equivalent of New. Use it only for package-level
 // constants where an invalid input represents a programmer error.
+//
+// The panic value is the *MoneyError returned by New. Callers using recover
+// should type-assert against the error interface (or *MoneyError directly),
+// not against string.
 func MustNew(minorAmount int64, currencyCode string) Money {
 	m, err := New(minorAmount, currencyCode)
 	if err != nil {
