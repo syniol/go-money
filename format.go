@@ -90,7 +90,9 @@ func (m Money) Format(f fmt.State, verb rune) {
 		case f.Flag('+'):
 			fmt.Fprintf(f, "money.Money{amount:%d currency:%s}", m.amount, m.Currency())
 		default:
-			fmt.Fprint(f, m.String())
+			// Common path: avoid the reflect-based Fprint overhead by
+			// writing the pre-rendered string directly.
+			_, _ = f.Write([]byte(m.String()))
 		}
 	case 'q':
 		fmt.Fprintf(f, "%q", m.String())
