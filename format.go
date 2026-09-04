@@ -104,40 +104,55 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 	if err != nil {
 		return m.String()
 	}
-	val := m.amount
-	isNeg := val < 0
-	var uval uint64
+	style := SymbolStyleNarrow
+	if len(opts) > 0 {
+		style = opts[0]
+	}
+	numberStr := formatLocalisedNumber(p, m.amount, m.currency.Decimals)
+	return applyCLDRTemplate(p, cur, m.currency, m.amount < 0, style, numberStr)
+}
+
+// formatLocalisedNumber returns the amount rendered with the locale's
+// decimal separator, without a currency symbol. Negative amounts are
+// prefixed with '-'.
+func formatLocalisedNumber(p *message.Printer, amount int64, decimals int) string {
+	isNeg := amount < 0
+	uval := uint64(amount)
 	if isNeg {
-		uval = uint64(-val)
-	} else {
-		uval = uint64(val)
+		uval = uint64(-amount)
 	}
 	var numberStr string
-	if m.currency.Decimals == 0 {
+	if decimals == 0 {
 		numberStr = p.Sprintf("%d", uval)
 	} else {
-		divisor := uint64(getPow10(m.currency.Decimals))
+		divisor := uint64(getPow10(decimals))
 		intPart := uval / divisor
 		fracPart := uval % divisor
+		// Sniff the locale's decimal separator by asking Printer to format a
+		// known value; the middle rune of "0<sep>0" is the separator.
 		sample := p.Sprintf("%.1f", 0.0)
 		decSep := "."
 		if len(sample) >= 3 {
 			decSep = sample[1 : len(sample)-1]
 		}
-		fracFormat := fmt.Sprintf("%%0%dd", m.currency.Decimals)
-		fracStr := fmt.Sprintf(fracFormat, fracPart)
+		fracStr := fmt.Sprintf(fmt.Sprintf("%%0%dd", decimals), fracPart)
 		numberStr = p.Sprintf("%d", intPart) + decSep + fracStr
 	}
 	if isNeg {
 		numberStr = "-" + numberStr
 	}
-	var sampleAmount float64 = 1.0
-	if isNeg {
+	return numberStr
+}
+
+// applyCLDRTemplate substitutes our exact numberStr into the CLDR currency
+// template for the chosen SymbolStyle. If the CLDR template has no unique
+// placeholder to substitute into (unlikely, but possible for exotic
+// locales) it falls back to symbol + number so the caller always gets a
+// non-empty rendering.
+func applyCLDRTemplate(p *message.Printer, cur currency.Unit, c *Currency, negative bool, style SymbolStyle, numberStr string) string {
+	sampleAmount := 1.0
+	if negative {
 		sampleAmount = -1.0
-	}
-	style := SymbolStyleNarrow
-	if len(opts) > 0 {
-		style = opts[0]
 	}
 	amt := cur.Amount(sampleAmount)
 	var sampleTemplate string
@@ -149,12 +164,9 @@ func (m Money) LocalisedString(tag language.Tag, opts ...SymbolStyle) string {
 	default:
 		sampleTemplate = p.Sprint(currency.NarrowSymbol(amt))
 	}
-	samplePlaceholder := p.Sprintf("%.*f", m.currency.Decimals, sampleAmount)
-	// Only substitute when the placeholder appears exactly once. A second
-	// occurrence would mean the placeholder collides with a literal in the
-	// CLDR template and the substitution would silently mangle the output.
+	samplePlaceholder := p.Sprintf("%.*f", c.Decimals, sampleAmount)
 	if strings.Count(sampleTemplate, samplePlaceholder) == 1 {
 		return strings.Replace(sampleTemplate, samplePlaceholder, numberStr, 1)
 	}
-	return m.currency.Symbol + numberStr
+	return c.Symbol + numberStr
 }
