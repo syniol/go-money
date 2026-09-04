@@ -5,6 +5,7 @@ Integer-backed monetary amounts for Go. `int64` minor units, overflow-safe arith
 [![CI](https://github.com/syniol/go-money/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/syniol/go-money/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/syniol/go-money.svg)](https://pkg.go.dev/github.com/syniol/go-money)
 [![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg)](https://opensource.org/license/bsd-3-clause)
+[![ISO 4217](https://img.shields.io/badge/ISO%204217-compliant-brightgreen.svg)](https://www.iso.org/iso-4217-currency-codes.html)
 
 ## When to use this
 
