@@ -5,6 +5,13 @@ import "fmt"
 // Currency holds immutable ISO 4217 metadata for a supported currency.
 // Instances are populated once by the code generator and shared by pointer;
 // callers must treat them as read-only.
+//
+// The MajorSingle, MajorPlural, MinorSingle and MinorPlural fields are
+// exposed as raw data. This package intentionally does not ship a plural
+// helper: correct pluralisation requires CLDR plural categories, which are
+// handled properly by golang.org/x/text/feature/plural. A single-condition
+// helper here would only be right for English and would mislead callers
+// into shipping it elsewhere.
 type Currency struct {
 	ISOCode      string
 	Name         string
@@ -93,10 +100,3 @@ func init() {
 	}
 }
 
-// The MajorSingle, MajorPlural, MinorSingle and MinorPlural fields on
-// Currency are exposed as raw data for consumers that need pluralised
-// display strings. This package intentionally does not ship a helper: correct
-// pluralisation requires CLDR plural categories, which are handled properly
-// by golang.org/x/text/feature/plural. A single-condition helper here would
-// only be right for English and would mislead callers into shipping it
-// elsewhere.
